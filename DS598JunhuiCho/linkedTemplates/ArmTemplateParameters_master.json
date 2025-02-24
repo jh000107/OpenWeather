@@ -8,9 +8,6 @@
 		"to_blob_sink_connectionString": {
 			"value": ""
 		},
-		"KeyVault_LS_properties_typeProperties_baseUrl": {
-			"value": "https://openweather-junhui.vault.azure.net/"
-		},
 		"airpollution_http_properties_typeProperties_url": {
 			"value": "http://api.openweathermap.org/"
 		},

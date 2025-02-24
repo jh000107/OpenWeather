@@ -11,10 +11,6 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'to_blob_sink'"
 		},
-		"KeyVault_LS_properties_typeProperties_baseUrl": {
-			"type": "string",
-			"defaultValue": "https://openweather-junhui.vault.azure.net/"
-		},
 		"airpollution_http_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "http://api.openweathermap.org/"
@@ -37,7 +33,14 @@
 					{
 						"name": "airpollution copy data",
 						"type": "Copy",
-						"dependsOn": [],
+						"dependsOn": [
+							{
+								"activity": "Retrieve API Key",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
 						"policy": {
 							"timeout": "0.12:00:00",
 							"retry": 0,
@@ -77,7 +80,10 @@
 									"lon": "-71.0605",
 									"start": "1706504400",
 									"end": "1738181987",
-									"appid": "063296aa01237892ad67c3aec3919db4"
+									"appid": {
+										"value": "@activity('Retrieve API Key').output.value",
+										"type": "Expression"
+									}
 								}
 							}
 						],
@@ -88,6 +94,28 @@
 								"parameters": {}
 							}
 						]
+					},
+					{
+						"name": "Retrieve API Key",
+						"type": "WebActivity",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "GET",
+							"headers": {},
+							"url": "https://openweather-junhui.vault.azure.net/secrets/OPENWEATHER-API-KEY/b4359060dffb4c7aa4db06bf81b438fb?api-version=7.0",
+							"authentication": {
+								"type": "MSI",
+								"resource": "https://vault.azure.net"
+							}
+						}
 					}
 				],
 				"policy": {
@@ -262,8 +290,7 @@
 						"defaultValue": "1738181987"
 					},
 					"appid": {
-						"type": "string",
-						"defaultValue": "@linkedService().KeyVault_LS.OPENWEATHER-API-KEY"
+						"type": "string"
 					}
 				},
 				"annotations": [],
@@ -365,19 +392,6 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/historical_weather_http')]"
 			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/KeyVault_LS')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"type": "AzureKeyVault",
-				"typeProperties": {
-					"baseUrl": "[parameters('KeyVault_LS_properties_typeProperties_baseUrl')]"
-				}
-			},
-			"dependsOn": []
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/airpollution_http')]",

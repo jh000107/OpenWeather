@@ -11,10 +11,6 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'to_blob_sink'"
 		},
-		"KeyVault_LS_properties_typeProperties_baseUrl": {
-			"type": "string",
-			"defaultValue": "https://openweather-junhui.vault.azure.net/"
-		},
 		"airpollution_http_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "http://api.openweathermap.org/"
@@ -52,9 +48,6 @@
 					},
 					"to_blob_sink_connectionString": {
 						"value": "[parameters('to_blob_sink_connectionString')]"
-					},
-					"KeyVault_LS_properties_typeProperties_baseUrl": {
-						"value": "[parameters('KeyVault_LS_properties_typeProperties_baseUrl')]"
 					},
 					"airpollution_http_properties_typeProperties_url": {
 						"value": "[parameters('airpollution_http_properties_typeProperties_url')]"
