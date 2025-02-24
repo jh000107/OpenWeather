@@ -23,8 +23,7 @@
 				"defaultValue": "1738181987"
 			},
 			"appid": {
-				"type": "string",
-				"defaultValue": "@linkedService().KeyVault_LS.OPENWEATHER-API-KEY"
+				"type": "string"
 			}
 		},
 		"annotations": [],
