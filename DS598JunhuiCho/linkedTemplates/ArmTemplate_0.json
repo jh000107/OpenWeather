@@ -204,8 +204,7 @@
 						"defaultValue": "hour"
 					},
 					"appid": {
-						"type": "string",
-						"defaultValue": "063296aa01237892ad67c3aec3919db4"
+						"type": "string"
 					}
 				},
 				"annotations": [],
@@ -339,7 +338,14 @@
 					{
 						"name": "For Each Week",
 						"type": "ForEach",
-						"dependsOn": [],
+						"dependsOn": [
+							{
+								"activity": "Retrieve API Key",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
 						"userProperties": [],
 						"typeProperties": {
 							"items": {
@@ -398,7 +404,10 @@
 													"type": "Expression"
 												},
 												"dataType": "hour",
-												"appid": "063296aa01237892ad67c3aec3919db4"
+												"appid": {
+													"value": "@activity('Retrieve API Key').output.value",
+													"type": "Expression"
+												}
 											}
 										}
 									],
@@ -416,6 +425,28 @@
 									]
 								}
 							]
+						}
+					},
+					{
+						"name": "Retrieve API Key",
+						"type": "WebActivity",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "GET",
+							"headers": {},
+							"url": "https://openweather-junhui.vault.azure.net/secrets/OPENWEATHER-API-KEY/b4359060dffb4c7aa4db06bf81b438fb?api-version=7.0",
+							"authentication": {
+								"type": "MSI",
+								"resource": "https://vault.azure.net"
+							}
 						}
 					}
 				],
