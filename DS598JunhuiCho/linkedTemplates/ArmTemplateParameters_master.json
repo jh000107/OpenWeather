@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "DS598JunhuiCho"
+		},
+		"to_blob_sink_connectionString": {
+			"value": ""
+		},
+		"KeyVault_LS_properties_typeProperties_baseUrl": {
+			"value": "https://openweather-junhui.vault.azure.net/"
+		},
+		"airpollution_http_properties_typeProperties_url": {
+			"value": "http://api.openweathermap.org/"
+		},
+		"historical_weather_http_properties_typeProperties_url": {
+			"value": "https://history.openweathermap.org/"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
