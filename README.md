@@ -32,4 +32,8 @@ Historical Weather Data Ingestion Pipeline can be found [here](https://github.co
 
 EDA Notebook can be found [here](https://github.com/jh000107/OpenWeather/blob/master/synapse/notebook/OpenWeather%20EDA.json)
 
-### Data Analysis
+## Azure Function + Event Hub
+
+**Objective**: Ingest real-time weather and air pollution data from the OpenWeather APIs into Azure Event Hubs using Azure Functions. This involves setting up an Event Hubs namespace and event hub, creating an Azure Function to fetch real-time data and send it to Event Hubs, and verifying the data ingestion process.
+
+Function script can be found [here](https://github.com/jh000107/OpenWeather/blob/master/azure_function/function_app.py)
