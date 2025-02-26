@@ -24,10 +24,10 @@ if not connection_str:
 eventhub_name = 'openweather'
 
 # Define your OpenWeather API key and endpoints
+KEY_VAULT_NAME = os.getenv("KEY_VAULT_NAME")
 
-def get_api_key(KEY_VAULT_NAME):
-    KV_URL = f"https://{KEY_VAULT_NAME}.vault.azure.net"
-
+def get_api_key():
+    KV_URL = f"https://{KEY_VAULT_NAME}.vault.azure.net/"
     credential = DefaultAzureCredential()
     client = SecretClient(vault_url=KV_URL, credential=credential)
 
@@ -37,7 +37,7 @@ def get_api_key(KEY_VAULT_NAME):
         print("API Key retrieved successfully from Key Vault.")
     except Exception as e:
         print(f"Error retrieving API Key: {e}")
-        api_key = None 
+        api_key = 'not retrieved'
     
     return api_key
 
@@ -102,8 +102,7 @@ def main(mytimer: func.TimerRequest) -> None:
         est_time = utc_time.astimezone(est_timezone).isoformat()
 
         logging.info("Starting function execution...")
-        KEY_VAULT_NAME = "openweahher-junhui"
-        api_key = get_api_key(KEY_VAULT_NAME)
+        api_key = get_api_key()
         lat, lon = 42.3601, -71.0589  # Coordinates for Boston
 
         logging.info("Fetching weather data...")
