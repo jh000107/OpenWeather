@@ -5,7 +5,14 @@
 			{
 				"name": "airpollution copy data",
 				"type": "Copy",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "Retrieve API Key",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
 					"timeout": "0.12:00:00",
 					"retry": 0,
@@ -45,7 +52,10 @@
 							"lon": "-71.0605",
 							"start": "1706504400",
 							"end": "1738181987",
-							"appid": "063296aa01237892ad67c3aec3919db4"
+							"appid": {
+								"value": "@activity('Retrieve API Key').output.value",
+								"type": "Expression"
+							}
 						}
 					}
 				],
@@ -55,6 +65,27 @@
 						"type": "DatasetReference"
 					}
 				]
+			},
+			{
+				"name": "Retrieve API Key",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "GET",
+					"url": "https://openweather-junhui.vault.azure.net/secrets/OPENWEATHER-API-KEY/b4359060dffb4c7aa4db06bf81b438fb?api-version=7.0",
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://vault.azure.net"
+					}
+				}
 			}
 		],
 		"annotations": [],

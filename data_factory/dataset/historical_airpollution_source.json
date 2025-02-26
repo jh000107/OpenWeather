@@ -23,8 +23,7 @@
 				"defaultValue": "1738181987"
 			},
 			"appid": {
-				"type": "string",
-				"defaultValue": "063296aa01237892ad67c3aec3919db4"
+				"type": "string"
 			}
 		},
 		"annotations": [],
