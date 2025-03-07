@@ -91,7 +91,7 @@ def send_to_eventhub(data):
         logging.error(f"Error sending data to Event Hub: {e}")
         raise
 
-@app.timer_trigger(schedule="0 0 * * * *", arg_name="mytimer", run_on_startup=True, use_monitor=True)
+@app.timer_trigger(schedule="0 * * * * *", arg_name="mytimer", run_on_startup=True, use_monitor=True)
 def main(mytimer: func.TimerRequest) -> None:
     try:
         if mytimer.past_due:
