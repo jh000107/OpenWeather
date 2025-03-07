@@ -37,3 +37,8 @@ EDA Notebook can be found [here](https://github.com/jh000107/OpenWeather/blob/ma
 **Objective**: Ingest real-time weather and air pollution data from the OpenWeather APIs into Azure Event Hubs using Azure Functions. This involves setting up an Event Hubs namespace and event hub, creating an Azure Function to fetch real-time data and send it to Event Hubs, and verifying the data ingestion process.
 
 Function script can be found [here](https://github.com/jh000107/OpenWeather/blob/master/azure_function/function_app.py)
+
+## Stream Analytics
+
+**Objective**: Set up a real-time data processing pipeline using Azure Stream Analytics to store real-time weather and air pollution data from Azure Event Hubs. The goal is to have the data will be processed on the fly and sent into PowerBI for a live dashboard.
+
