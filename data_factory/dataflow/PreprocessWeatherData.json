@@ -1,13 +1,33 @@
 {
-	"name": "PreprocessAirPollutionData",
+	"name": "PreprocessWeatherData",
 	"properties": {
 		"type": "MappingDataFlow",
 		"typeProperties": {
-			"sources": [],
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "historical_weather_sink",
+						"type": "DatasetReference"
+					},
+					"name": "WeatherData",
+					"description": "Add Weather Data from Bronze Layer"
+				}
+			],
 			"sinks": [],
-			"transformations": [],
+			"transformations": [
+				{
+					"name": "flatten1"
+				}
+			],
 			"scriptLines": [
-				""
+				"source(allowSchemaDrift: false,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     documentForm: 'documentPerLine',",
+				"     wildcardPaths:['*.json']) ~> WeatherData",
+				"WeatherData foldDown(unroll(),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> flatten1"
 			]
 		}
 	}
