@@ -16,7 +16,8 @@
 			"sinks": [],
 			"transformations": [
 				{
-					"name": "flatten1"
+					"name": "FlattenWeatherData",
+					"description": "Unrolling arrays from list."
 				}
 			],
 			"scriptLines": [
@@ -33,9 +34,31 @@
 				"     ignoreNoFilesFound: false,",
 				"     documentForm: 'documentPerLine',",
 				"     wildcardPaths:['*.json']) ~> WeatherData",
-				"WeatherData foldDown(unroll(),",
+				"WeatherData foldDown(unroll(list),",
+				"     mapColumn(",
+				"          message,",
+				"          cod,",
+				"          city_id,",
+				"          calctime,",
+				"          cnt,",
+				"          timestamp = list.dt,",
+				"          temp = list.main.temp,",
+				"          feels_like = list.main.feels_like,",
+				"          pressure = list.main.pressure,",
+				"          humidity = list.main.humidity,",
+				"          temp_min = list.main.temp_min,",
+				"          temp_max = list.main.temp_max,",
+				"          wind_speed = list.wind.speed,",
+				"          wind_deg = list.wind.deg,",
+				"          wind_gust = list.wind.gust,",
+				"          clouds_all = list.clouds.all,",
+				"          weather_id = list.weather.id,",
+				"          weather_main = list.weather.main,",
+				"          weather_description = list.weather.description,",
+				"          weather_icon = list.weather.icon",
+				"     ),",
 				"     skipDuplicateMapInputs: false,",
-				"     skipDuplicateMapOutputs: false) ~> flatten1"
+				"     skipDuplicateMapOutputs: false) ~> FlattenWeatherData"
 			]
 		}
 	}
