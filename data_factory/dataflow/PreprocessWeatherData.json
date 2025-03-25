@@ -17,14 +17,18 @@
 			"transformations": [
 				{
 					"name": "FlattenWeatherData",
-					"description": "Unrolling arrays from list."
+					"description": "Unrolling nested arrays from 'list'."
 				},
 				{
-					"name": "TransformTimestampLoc",
+					"name": "DeriveTimestampLoc",
 					"description": "Transform timestamp and create unique ID for location (Boston)"
 				},
 				{
 					"name": "FilterInvalidRows"
+				},
+				{
+					"name": "MoreDerivedColumns",
+					"description": "Creating/updating the columns 'message, cod, city_id, calctime, cnt, timestamp, temp, feels_like, pressure, humidity, temp_miån, temp_max, wind_speed, wind_deg, wind_gust, clouds_all, weather_id, weather_main, weather_description, weather_icon, corrected_timestamp, location'"
 				}
 			],
 			"scriptLines": [
@@ -67,8 +71,19 @@
 				"     skipDuplicateMapInputs: false,",
 				"     skipDuplicateMapOutputs: false) ~> FlattenWeatherData",
 				"FlattenWeatherData derive(corrected_timestamp = iif(length(toString(timestamp)) == 10, timestamp, toInteger(null())),",
-				"          location = 'Boston') ~> TransformTimestampLoc",
-				"TransformTimestampLoc filter(ERROR_FUNCTION('')) ~> FilterInvalidRows"
+				"          location = 'Boston') ~> DeriveTimestampLoc",
+				"DeriveTimestampLoc filter(!isNull(temp) && !isNull(humidity) && !isNull(feels_like) && !isNull(weather_main)) ~> FilterInvalidRows",
+				"FilterInvalidRows derive(date_time = ERROR_FUNCTION(''),",
+				"          id = ERROR_FUNCTION(''),",
+				"          temp_C = ERROR_FUNCTION(''),",
+				"          temp_min_C = ERROR_FUNCTION(''),",
+				"          temp_max_C = ERROR_FUNCTION(''),",
+				"          feels_like_C = ERROR_FUNCTION(''),",
+				"          temp_min_F = ERROR_FUNCTION(''),",
+				"          temp_max_F = ERROR_FUNCTION(''),",
+				"          feels_like_F = ERROR_FUNCTION(''),",
+				"          lon = ERROR_FUNCTION(''),",
+				"          lan = ERROR_FUNCTION('')) ~> MoreDerivedColumns"
 			]
 		}
 	}
