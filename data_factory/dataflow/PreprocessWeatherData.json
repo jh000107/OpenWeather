@@ -44,7 +44,7 @@
 				"     validateSchema: false,",
 				"     ignoreNoFilesFound: false,",
 				"     documentForm: 'documentPerLine',",
-				"     wildcardPaths:['*.json']) ~> WeatherData",
+				"     wildcardPaths:['bronze/historical_weather/*.json']) ~> WeatherData",
 				"WeatherData foldDown(unroll(list),",
 				"     mapColumn(",
 				"          message,",
@@ -66,7 +66,8 @@
 				"          weather_id = list.weather.id,",
 				"          weather_main = list.weather.main,",
 				"          weather_description = list.weather.description,",
-				"          weather_icon = list.weather.icon",
+				"          weather_icon = list.weather.icon,",
+				"          rain_1h = {list.rain.{1h}}",
 				"     ),",
 				"     skipDuplicateMapInputs: false,",
 				"     skipDuplicateMapOutputs: false) ~> FlattenWeatherData",
@@ -83,7 +84,12 @@
 				"          temp_max_F = ERROR_FUNCTION(''),",
 				"          feels_like_F = ERROR_FUNCTION(''),",
 				"          lon = ERROR_FUNCTION(''),",
-				"          lan = ERROR_FUNCTION('')) ~> MoreDerivedColumns"
+				"          lan = ERROR_FUNCTION(''),",
+				"          weather_id_value = ERROR_FUNCTION(''),",
+				"          weather_main_value = ERROR_FUNCTION(''),",
+				"          weather_description_value = ERROR_FUNCTION(''),",
+				"          weather_icon_value = ERROR_FUNCTION(''),",
+				"          rain_1h = ERROR_FUNCTION('')) ~> MoreDerivedColumns"
 			]
 		}
 	}
