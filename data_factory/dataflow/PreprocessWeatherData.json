@@ -18,6 +18,13 @@
 				{
 					"name": "FlattenWeatherData",
 					"description": "Unrolling arrays from list."
+				},
+				{
+					"name": "TransformTimestampLoc",
+					"description": "Transform timestamp and create unique ID for location (Boston)"
+				},
+				{
+					"name": "FilterInvalidRows"
 				}
 			],
 			"scriptLines": [
@@ -58,7 +65,10 @@
 				"          weather_icon = list.weather.icon",
 				"     ),",
 				"     skipDuplicateMapInputs: false,",
-				"     skipDuplicateMapOutputs: false) ~> FlattenWeatherData"
+				"     skipDuplicateMapOutputs: false) ~> FlattenWeatherData",
+				"FlattenWeatherData derive(corrected_timestamp = iif(length(toString(timestamp)) == 10, timestamp, toInteger(null())),",
+				"          location = 'Boston') ~> TransformTimestampLoc",
+				"TransformTimestampLoc filter(ERROR_FUNCTION('')) ~> FilterInvalidRows"
 			]
 		}
 	}
