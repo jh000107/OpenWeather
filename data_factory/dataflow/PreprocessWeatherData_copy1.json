@@ -1,5 +1,5 @@
 {
-	"name": "PreprocessWeatherData",
+	"name": "PreprocessWeatherData_copy1",
 	"properties": {
 		"type": "MappingDataFlow",
 		"typeProperties": {
@@ -13,22 +13,19 @@
 					"description": "Add Weather Data from Bronze Layer"
 				}
 			],
-			"sinks": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "Parquet1",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
 			"transformations": [
 				{
 					"name": "FlattenWeatherData",
 					"description": "Unrolling nested arrays from 'list'."
-				},
-				{
-					"name": "DeriveTimestampLoc",
-					"description": "Transform timestamp and create unique ID for location (Boston)"
-				},
-				{
-					"name": "FilterInvalidRows"
-				},
-				{
-					"name": "MoreDerivedColumns",
-					"description": "Creating/updating the columns 'message, cod, city_id, calctime, cnt, timestamp, temp, feels_like, pressure, humidity, temp_miån, temp_max, wind_speed, wind_deg, wind_gust, clouds_all, weather_id, weather_main, weather_description, weather_icon, corrected_timestamp, location'"
 				}
 			],
 			"scriptLines": [
@@ -71,25 +68,12 @@
 				"     ),",
 				"     skipDuplicateMapInputs: false,",
 				"     skipDuplicateMapOutputs: false) ~> FlattenWeatherData",
-				"FlattenWeatherData derive(corrected_timestamp = iif(length(toString(timestamp)) == 10, timestamp, toInteger(null())),",
-				"          location = 'Boston') ~> DeriveTimestampLoc",
-				"DeriveTimestampLoc filter(!isNull(temp) && !isNull(humidity) && !isNull(feels_like) && !isNull(weather_main)) ~> FilterInvalidRows",
-				"FilterInvalidRows derive(date_time = toTimestamp(toLong(corrected_timestamp * 1000)),",
-				"          id = concat(location, toString(corrected_timestamp)),",
-				"          temp_C = round(temp - 273.15),",
-				"          temp_min_C = round(temp_min - 273.15),",
-				"          temp_max_C = round(temp_max - 273.15),",
-				"          feels_like_C = round(feels_like - 273.15),",
-				"          temp_min_F = (temp_min-273.15) * 9/5 + 32,",
-				"          temp_max_F = (temp_max-273.15) * 9/5 + 32,",
-				"          feels_like_F = (feels_like-273.15) * 9/5 + 32,",
-				"          lon = -71.0589,",
-				"          lat = 42.3601,",
-				"          weather_id_value = toString(weather_id[0]),",
-				"          weather_main_value = weather_main[0],",
-				"          weather_description_value = split(weather_description[0], ' ')[-1],",
-				"          weather_icon_value = ERROR_FUNCTION(''),",
-				"          rain_1h = ERROR_FUNCTION('')) ~> MoreDerivedColumns"
+				"FlattenWeatherData sink(allowSchemaDrift: false,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sink1"
 			]
 		}
 	}

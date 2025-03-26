@@ -1,0 +1,21 @@
+{
+	"name": "Parquet1",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "to_blob_sink",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "test.parqet",
+				"folderPath": "silver/historical_weather",
+				"container": "blob1"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	}
+}
