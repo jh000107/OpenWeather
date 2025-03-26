@@ -1,5 +1,5 @@
 {
-	"name": "Parquet1",
+	"name": "cleaned_weather_data",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "to_blob_sink",
@@ -10,11 +10,10 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"fileName": "test.parqet",
 				"folderPath": "silver/historical_weather",
 				"container": "blob1"
 			},
-			"compressionCodec": "snappy"
+			"compressionCodec": "none"
 		},
 		"schema": []
 	}
