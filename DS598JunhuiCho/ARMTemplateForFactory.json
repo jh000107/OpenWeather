@@ -268,53 +268,7 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "Data flow1",
-						"type": "ExecuteDataFlow",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"dataflow": {
-								"referenceName": "PreprocessWeatherData_copy1",
-								"type": "DataFlowReference",
-								"parameters": {},
-								"datasetParameters": {
-									"WeatherData": {},
-									"sink1": {}
-								}
-							},
-							"staging": {},
-							"compute": {
-								"coreCount": 8,
-								"computeType": "General"
-							},
-							"traceLevel": "Fine"
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {}
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/dataflows/PreprocessWeatherData_copy1')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/Parquet1')]",
+			"name": "[concat(parameters('factoryName'), '/cleaned_weather_data')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
 			"properties": {
@@ -327,11 +281,10 @@
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobStorageLocation",
-						"fileName": "test.parqet",
 						"folderPath": "silver/historical_weather",
 						"container": "blob1"
 					},
-					"compressionCodec": "snappy"
+					"compressionCodec": "none"
 				},
 				"schema": []
 			},
@@ -773,27 +726,32 @@
 					"sinks": [
 						{
 							"dataset": {
-								"referenceName": "Parquet1",
+								"referenceName": "cleaned_weather_data",
 								"type": "DatasetReference"
 							},
-							"name": "sink1"
+							"name": "Silver",
+							"description": "Export data to Silver layer"
 						}
 					],
 					"transformations": [
 						{
-							"name": "FlattenWeatherData",
+							"name": "FlattenAndMapNestedFields",
 							"description": "Unrolling nested arrays from 'list'."
 						},
 						{
-							"name": "DeriveTimestampLoc",
+							"name": "TimestampAndLocation",
 							"description": "Transform timestamp and create unique ID for location (Boston)"
 						},
 						{
-							"name": "FilterInvalidRows"
+							"name": "RemoveInvalidRows"
 						},
 						{
-							"name": "MoreDerivedColumns",
+							"name": "DerivedColumns",
 							"description": "Creating/updating the columns 'message, cod, city_id, calctime, cnt, timestamp, temp, feels_like, pressure, humidity, temp_miån, temp_max, wind_speed, wind_deg, wind_gust, clouds_all, weather_id, weather_main, weather_description, weather_icon, corrected_timestamp, location'"
+						},
+						{
+							"name": "RenameAndDrop",
+							"description": "Rename columns, Drop unnecessary columns."
 						}
 					],
 					"scriptLines": [
@@ -805,110 +763,7 @@
 						"          cnt as integer,",
 						"          list as (dt as integer, main as (temp as double, feels_like as double, pressure as integer, humidity as integer, temp_min as double, temp_max as double), wind as (speed as double, deg as integer, gust as double), clouds as (all as integer), weather as (id as integer, main as string, description as string, icon as string)[])[]",
 						"     ),",
-						"     allowSchemaDrift: false,",
-						"     validateSchema: false,",
-						"     ignoreNoFilesFound: false,",
-						"     documentForm: 'documentPerLine',",
-						"     wildcardPaths:['bronze/historical_weather/*.json']) ~> WeatherData",
-						"WeatherData foldDown(unroll(list),",
-						"     mapColumn(",
-						"          message,",
-						"          cod,",
-						"          city_id,",
-						"          calctime,",
-						"          cnt,",
-						"          timestamp = list.dt,",
-						"          temp = list.main.temp,",
-						"          feels_like = list.main.feels_like,",
-						"          pressure = list.main.pressure,",
-						"          humidity = list.main.humidity,",
-						"          temp_min = list.main.temp_min,",
-						"          temp_max = list.main.temp_max,",
-						"          wind_speed = list.wind.speed,",
-						"          wind_deg = list.wind.deg,",
-						"          wind_gust = list.wind.gust,",
-						"          clouds_all = list.clouds.all,",
-						"          weather_id = list.weather.id,",
-						"          weather_main = list.weather.main,",
-						"          weather_description = list.weather.description,",
-						"          weather_icon = list.weather.icon",
-						"     ),",
-						"     skipDuplicateMapInputs: false,",
-						"     skipDuplicateMapOutputs: false) ~> FlattenWeatherData",
-						"FlattenWeatherData derive(corrected_timestamp = iif(length(toString(timestamp)) == 10, timestamp, toInteger(null())),",
-						"          location = 'Boston') ~> DeriveTimestampLoc",
-						"DeriveTimestampLoc filter(!isNull(temp) && !isNull(humidity) && !isNull(feels_like) && !isNull(weather_main)) ~> FilterInvalidRows",
-						"FilterInvalidRows derive(date_time = toTimestamp(toLong(corrected_timestamp * 1000)),",
-						"          id = concat(location, toString(corrected_timestamp)),",
-						"          temp_C = round(temp - 273.15),",
-						"          temp_min_C = round(temp_min - 273.15),",
-						"          temp_max_C = round(temp_max - 273.15),",
-						"          feels_like_C = round(feels_like - 273.15),",
-						"          temp_min_F = (temp_min-273.15) * 9/5 + 32,",
-						"          temp_max_F = (temp_max-273.15) * 9/5 + 32,",
-						"          feels_like_F = (feels_like-273.15) * 9/5 + 32,",
-						"          lon = -71.0589,",
-						"          lat = 42.3601,",
-						"          weather_id_value = toString(weather_id[0]),",
-						"          weather_main_value = weather_main[0],",
-						"          weather_description_value = split(weather_description[0], ' ')[-1],",
-						"          weather_icon_value = split(weather_description[0], ' ')[-1],",
-						"          rain_1h = split(weather_description[0], ' ')[-1]) ~> MoreDerivedColumns",
-						"MoreDerivedColumns sink(allowSchemaDrift: true,",
-						"     validateSchema: false,",
-						"     format: 'parquet',",
-						"     skipDuplicateMapInputs: true,",
-						"     skipDuplicateMapOutputs: true) ~> sink1"
-					]
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/historical_weather_bronze')]",
-				"[concat(variables('factoryId'), '/datasets/Parquet1')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/PreprocessWeatherData_copy1')]",
-			"type": "Microsoft.DataFactory/factories/dataflows",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"type": "MappingDataFlow",
-				"typeProperties": {
-					"sources": [
-						{
-							"dataset": {
-								"referenceName": "historical_weather_bronze",
-								"type": "DatasetReference"
-							},
-							"name": "WeatherData",
-							"description": "Add Weather Data from Bronze Layer"
-						}
-					],
-					"sinks": [
-						{
-							"dataset": {
-								"referenceName": "Parquet1",
-								"type": "DatasetReference"
-							},
-							"name": "sink1"
-						}
-					],
-					"transformations": [
-						{
-							"name": "FlattenWeatherData",
-							"description": "Unrolling nested arrays from 'list'."
-						}
-					],
-					"scriptLines": [
-						"source(output(",
-						"          message as string,",
-						"          cod as string,",
-						"          city_id as integer,",
-						"          calctime as double,",
-						"          cnt as integer,",
-						"          list as (dt as integer, main as (temp as double, feels_like as double, pressure as integer, humidity as integer, temp_min as double, temp_max as double), wind as (speed as double, deg as integer, gust as double), clouds as (all as integer), weather as (id as integer, main as string, description as string, icon as string)[])[]",
-						"     ),",
-						"     allowSchemaDrift: false,",
+						"     allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     ignoreNoFilesFound: false,",
 						"     documentForm: 'documentPerLine',",
@@ -937,19 +792,69 @@
 						"          weather_icon = list.weather.icon",
 						"     ),",
 						"     skipDuplicateMapInputs: false,",
-						"     skipDuplicateMapOutputs: false) ~> FlattenWeatherData",
-						"FlattenWeatherData sink(allowSchemaDrift: true,",
+						"     skipDuplicateMapOutputs: false) ~> FlattenAndMapNestedFields",
+						"FlattenAndMapNestedFields derive(corrected_timestamp = iif(length(toString(timestamp)) == 10, timestamp, toInteger(null())),",
+						"          location = 'Boston') ~> TimestampAndLocation",
+						"TimestampAndLocation filter(!isNull(temp) && !isNull(humidity) && !isNull(feels_like) && !isNull(weather_main)) ~> RemoveInvalidRows",
+						"RemoveInvalidRows derive(date_time = toTimestamp(toLong(corrected_timestamp * 1000)),",
+						"          id = concat(location, toString(corrected_timestamp)),",
+						"          temp_C = round(temp - 273.15),",
+						"          temp_min_C = round(temp_min - 273.15),",
+						"          temp_max_C = round(temp_max - 273.15),",
+						"          feels_like_C = round(feels_like - 273.15),",
+						"          temp_min_F = (temp_min-273.15) * 9/5 + 32,",
+						"          temp_max_F = (temp_max-273.15) * 9/5 + 32,",
+						"          feels_like_F = (feels_like-273.15) * 9/5 + 32,",
+						"          lon = -71.0589,",
+						"          lat = 42.3601,",
+						"          weather_id_value = weather_id,",
+						"          weather_main_value = weather_main,",
+						"          weather_description_value = weather_description,",
+						"          weather_icon_value = weather_icon) ~> DerivedColumns",
+						"DerivedColumns select(mapColumn(",
+						"          temp_K = temp,",
+						"          feels_like_K = feels_like,",
+						"          pressure,",
+						"          humidity,",
+						"          temp_min_K = temp_min,",
+						"          temp_max_K = temp_max,",
+						"          wind_speed,",
+						"          wind_deg,",
+						"          wind_gust,",
+						"          clouds_all,",
+						"          corrected_timestamp,",
+						"          location,",
+						"          date_time,",
+						"          id,",
+						"          temp_C,",
+						"          temp_min_C,",
+						"          temp_max_C,",
+						"          feels_like_C,",
+						"          temp_min_F,",
+						"          temp_max_F,",
+						"          feels_like_F,",
+						"          lon,",
+						"          lat,",
+						"          weather_id_value,",
+						"          weather_main_value,",
+						"          weather_description_value,",
+						"          weather_icon_value",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> RenameAndDrop",
+						"RenameAndDrop sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     format: 'parquet',",
+						"     partitionFileNames:['weather_cleaned.parquet'],",
 						"     skipDuplicateMapInputs: true,",
 						"     skipDuplicateMapOutputs: true,",
-						"     partitionBy('hash', 1)) ~> sink1"
+						"     partitionBy('hash', 1)) ~> Silver"
 					]
 				}
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/historical_weather_bronze')]",
-				"[concat(variables('factoryId'), '/datasets/Parquet1')]"
+				"[concat(variables('factoryId'), '/datasets/cleaned_weather_data')]"
 			]
 		}
 	]
