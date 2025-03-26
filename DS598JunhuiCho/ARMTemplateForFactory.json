@@ -913,7 +913,7 @@
 						"     ignoreNoFilesFound: false,",
 						"     documentForm: 'documentPerLine',",
 						"     wildcardPaths:['bronze/historical_weather/*.json']) ~> WeatherData",
-						"WeatherData foldDown(unroll(list),",
+						"WeatherData foldDown(unrollMultiple(list,list.weather),",
 						"     mapColumn(",
 						"          message,",
 						"          cod,",
