@@ -9,7 +9,7 @@
 						"referenceName": "historical_weather_bronze",
 						"type": "DatasetReference"
 					},
-					"name": "WeatherData",
+					"name": "BronzeWeatherData",
 					"description": "Add Weather Data from Bronze Layer"
 				}
 			],
@@ -19,7 +19,7 @@
 						"referenceName": "cleaned_weather_data",
 						"type": "DatasetReference"
 					},
-					"name": "Silver",
+					"name": "SilverWeatherData",
 					"description": "Export data to Silver layer"
 				}
 			],
@@ -55,10 +55,12 @@
 				"     ),",
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
+				"     inferDriftedColumnTypes: true,",
 				"     ignoreNoFilesFound: false,",
 				"     documentForm: 'documentPerLine',",
-				"     wildcardPaths:['bronze/historical_weather/*.json']) ~> WeatherData",
-				"WeatherData foldDown(unrollMultiple(list,list.weather),",
+				"     wildcardPaths:['bronze/historical_weather/*.json'],",
+				"     partitionBy('hash', 1)) ~> BronzeWeatherData",
+				"BronzeWeatherData foldDown(unrollMultiple(list,list.weather),",
 				"     mapColumn(",
 				"          message,",
 				"          cod,",
@@ -79,12 +81,15 @@
 				"          weather_id = list.weather.id,",
 				"          weather_main = list.weather.main,",
 				"          weather_description = list.weather.description,",
-				"          weather_icon = list.weather.icon",
+				"          weather_icon = list.weather.icon,",
+				"          {undefined}",
 				"     ),",
+				"     partitionBy('hash', 1),",
 				"     skipDuplicateMapInputs: false,",
 				"     skipDuplicateMapOutputs: false) ~> FlattenAndMapNestedFields",
 				"FlattenAndMapNestedFields derive(corrected_timestamp = iif(length(toString(timestamp)) == 10, timestamp, toInteger(null())),",
-				"          location = 'Boston') ~> TimestampAndLocation",
+				"          location = 'Boston',",
+				"     partitionBy('hash', 1)) ~> TimestampAndLocation",
 				"TimestampAndLocation filter(!isNull(temp) && !isNull(humidity) && !isNull(feels_like) && !isNull(weather_main)) ~> RemoveInvalidRows",
 				"RemoveInvalidRows derive(date_time = toTimestamp(toLong(corrected_timestamp * 1000)),",
 				"          id = concat(location, toString(corrected_timestamp)),",
@@ -138,7 +143,7 @@
 				"     partitionFileNames:['weather_cleaned.parquet'],",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
-				"     partitionBy('hash', 1)) ~> Silver"
+				"     partitionBy('hash', 1)) ~> SilverWeatherData"
 			]
 		}
 	}
