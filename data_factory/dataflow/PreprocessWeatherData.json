@@ -13,7 +13,15 @@
 					"description": "Add Weather Data from Bronze Layer"
 				}
 			],
-			"sinks": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "Parquet1",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
 			"transformations": [
 				{
 					"name": "FlattenWeatherData",
@@ -67,7 +75,7 @@
 				"          weather_main = list.weather.main,",
 				"          weather_description = list.weather.description,",
 				"          weather_icon = list.weather.icon,",
-				"          rain_1h = {list.rain.{1h}",
+				"          rain_1h = {list.rain.{1h}}",
 				"     ),",
 				"     skipDuplicateMapInputs: false,",
 				"     skipDuplicateMapOutputs: false) ~> FlattenWeatherData",
@@ -89,7 +97,12 @@
 				"          weather_main_value = weather_main[0],",
 				"          weather_description_value = split(weather_description[0], ' ')[-1],",
 				"          weather_icon_value = split(weather_description[0], ' ')[-1],",
-				"          rain_1h = split(weather_description[0], ' ')[-1]) ~> MoreDerivedColumns"
+				"          rain_1h = split(weather_description[0], ' ')[-1]) ~> MoreDerivedColumns",
+				"MoreDerivedColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
 			]
 		}
 	}
