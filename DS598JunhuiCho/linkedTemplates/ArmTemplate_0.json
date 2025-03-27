@@ -1009,7 +1009,7 @@
 						"FlattenAndMapNestedFields derive(corrected_timestamp = iif(length(toString(timestamp)) == 10, timestamp, toInteger(null())),",
 						"          location = 'Boston',",
 						"     partitionBy('hash', 1)) ~> TimestampAndLocation",
-						"TimestampAndLocation filter(!isNull(temp) && !isNull(humidity) && !isNull(feels_like) && !isNull(weather_main) && isNull(corrected_timestamp),",
+						"TimestampAndLocation filter(!isNull(temp) && !isNull(humidity) && !isNull(feels_like) && !isNull(weather_main) && !isNull(corrected_timestamp),",
 						"     partitionBy('hash', 1)) ~> RemoveInvalidRows",
 						"RemoveInvalidRows derive(date_time = toTimestamp(toLong(corrected_timestamp * 1000)),",
 						"          id = concat(location, toString(corrected_timestamp)),",
