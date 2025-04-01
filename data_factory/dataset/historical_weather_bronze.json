@@ -1,24 +1,15 @@
 {
-	"name": "historical_weather_sink",
+	"name": "historical_weather_bronze",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "to_blob_sink",
 			"type": "LinkedServiceReference"
-		},
-		"parameters": {
-			"fileName": {
-				"type": "string"
-			}
 		},
 		"annotations": [],
 		"type": "Json",
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"fileName": {
-					"value": "@{dataset().fileName}",
-					"type": "Expression"
-				},
 				"folderPath": "bronze/historical_weather",
 				"container": "blob1"
 			}
@@ -119,6 +110,5 @@
 				}
 			}
 		}
-	},
-	"type": "Microsoft.DataFactory/factories/datasets"
+	}
 }

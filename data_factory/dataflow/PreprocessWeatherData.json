@@ -1,0 +1,156 @@
+{
+	"name": "PreprocessWeatherData",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "historical_weather_bronze",
+						"type": "DatasetReference"
+					},
+					"name": "BronzeWeatherData",
+					"description": "Add Weather Data from Bronze Layer"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "cleaned_weather_data",
+						"type": "DatasetReference"
+					},
+					"name": "SilverWeatherData",
+					"description": "Export data to Silver layer"
+				}
+			],
+			"transformations": [
+				{
+					"name": "TimestampAndLocation",
+					"description": "Transform timestamp and create unique ID for location (Boston)"
+				},
+				{
+					"name": "RemoveInvalidRows"
+				},
+				{
+					"name": "DerivedColumns",
+					"description": "Creating/updating the columns 'message, cod, city_id, calctime, cnt, timestamp, temp, feels_like, pressure, humidity, temp_miån, temp_max, wind_speed, wind_deg, wind_gust, clouds_all, weather_id, weather_main, weather_description, weather_icon, corrected_timestamp, location'"
+				},
+				{
+					"name": "RenameAndDrop",
+					"description": "Rename columns, Drop unnecessary columns."
+				},
+				{
+					"name": "FlattenAndMapNestedFields"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          calctime as double,",
+				"          city_id as boolean,",
+				"          cnt as short,",
+				"          cod as short,",
+				"          list as (clouds as (all as short), dt as integer, main as (feels_like as double, humidity as short, pressure as short, temp as double, temp_max as double, temp_min as double), rain as ({1h} as double), snow as ({1h} as double), weather as (description as string, icon as string, id as short, main as string)[], wind as (deg as short, gust as double, speed as double))[],",
+				"          message as string",
+				"     ),",
+				"     allowSchemaDrift: false,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     documentForm: 'documentPerLine',",
+				"     wildcardPaths:['bronze/historical_weather/*.json'],",
+				"     partitionBy('hash', 1)) ~> BronzeWeatherData",
+				"FlattenAndMapNestedFields derive(corrected_timestamp = iif(length(toString(timestamp)) == 10, timestamp, toInteger(null())),",
+				"          location = 'Boston',",
+				"     partitionBy('hash', 1)) ~> TimestampAndLocation",
+				"TimestampAndLocation filter(!isNull(temp) && !isNull(humidity) && !isNull(feels_like) && !isNull(weather_main) && !isNull(corrected_timestamp),",
+				"     partitionBy('hash', 1)) ~> RemoveInvalidRows",
+				"RemoveInvalidRows derive(date_time = toTimestamp(toLong(corrected_timestamp) * 1000),",
+				"          id = concat(location, toString(corrected_timestamp)),",
+				"          temp_C = round(temp - 273.15),",
+				"          temp_min_C = round(temp_min - 273.15),",
+				"          temp_max_C = round(temp_max - 273.15),",
+				"          feels_like_C = round(feels_like - 273.15),",
+				"          temp_min_F = round((temp_min-273.15) * 9/5 + 32),",
+				"          temp_max_F = round((temp_max-273.15) * 9/5 + 32),",
+				"          feels_like_F = round((feels_like-273.15) * 9/5 + 32),",
+				"          lon = -71.0589,",
+				"          lat = 42.3601,",
+				"          weather_id_value = weather_id,",
+				"          weather_main_value = weather_main,",
+				"          weather_description_value = weather_description,",
+				"          weather_icon_value = weather_icon,",
+				"          rain_1h = iif(isNull(rain_1h), toFloat(0.0), toFloat(round(rain_1h, 2))),",
+				"          snow_1h = iif(isNull(snow_1h), toFloat(0.0), toFloat(round(snow_1h, 2))),",
+				"     partitionBy('hash', 1)) ~> DerivedColumns",
+				"DerivedColumns select(mapColumn(",
+				"          clouds_all,",
+				"          feels_like_K = feels_like,",
+				"          humidity,",
+				"          pressure,",
+				"          temp_K = temp,",
+				"          temp_max_K = temp_max,",
+				"          temp_min_K = temp_min,",
+				"          rain_1h,",
+				"          snow_1h,",
+				"          wind_deg,",
+				"          wind_gust,",
+				"          wind_speed,",
+				"          corrected_timestamp,",
+				"          location,",
+				"          date_time,",
+				"          id,",
+				"          temp_C,",
+				"          temp_min_C,",
+				"          temp_max_C,",
+				"          feels_like_C,",
+				"          temp_min_F,",
+				"          temp_max_F,",
+				"          feels_like_F,",
+				"          lon,",
+				"          lat,",
+				"          weather_id_value,",
+				"          weather_main_value,",
+				"          weather_description_value,",
+				"          weather_icon_value",
+				"     ),",
+				"     partitionBy('hash', 1),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RenameAndDrop",
+				"BronzeWeatherData foldDown(unrollMultiple(list,list.weather),",
+				"     mapColumn(",
+				"          calctime,",
+				"          city_id,",
+				"          cnt,",
+				"          cod,",
+				"          message,",
+				"          clouds_all = list.clouds.all,",
+				"          timestamp = list.dt,",
+				"          feels_like = list.main.feels_like,",
+				"          humidity = list.main.humidity,",
+				"          pressure = list.main.pressure,",
+				"          temp = list.main.temp,",
+				"          temp_max = list.main.temp_max,",
+				"          temp_min = list.main.temp_min,",
+				"          rain_1h = list.rain.{1h},",
+				"          snow_1h = list.snow.{1h},",
+				"          weather_description = list.weather.description,",
+				"          weather_icon = list.weather.icon,",
+				"          weather_id = list.weather.id,",
+				"          weather_main = list.weather.main,",
+				"          wind_deg = list.wind.deg,",
+				"          wind_gust = list.wind.gust,",
+				"          wind_speed = list.wind.speed",
+				"     ),",
+				"     partitionBy('hash', 1),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> FlattenAndMapNestedFields",
+				"RenameAndDrop sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     partitionFileNames:['weather_cleaned.parquet'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> SilverWeatherData"
+			]
+		}
+	}
+}

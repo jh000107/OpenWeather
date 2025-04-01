@@ -1,0 +1,20 @@
+{
+	"name": "cleaned_weather_data",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "to_blob_sink",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"folderPath": "silver/historical_weather",
+				"container": "blob1"
+			},
+			"compressionCodec": "none"
+		},
+		"schema": []
+	}
+}
