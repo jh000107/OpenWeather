@@ -42,3 +42,10 @@ Function script can be found [here](https://github.com/jh000107/OpenWeather/blob
 
 **Objective**: Set up a real-time data processing pipeline using Azure Stream Analytics to store real-time weather and air pollution data from Azure Event Hubs. The goal is to have the data will be processed on the fly and sent into PowerBI for a live dashboard.
 
+## Data Flow
+
+**Objective**: Clean and preprocess the historical/stream data ingested from the OpenWeather APIs using Azure Data Factory. This involves handling missing values, correcting data types, and transforming the data to make it suitable for analysis. The processed data will be stored in the Silver layer of Azure Data Lake Storage.
+
+Historical Air Pollution Data Flow can be found [here](https://github.com/jh000107/OpenWeather/blob/master/data_factory/dataflow/PreprocessAirPollutionData.json).
+
+Historical Weather Data Flow can be found [here](https://github.com/jh000107/OpenWeather/blob/master/data_factory/dataflow/PreprocessWeatherData.json).
