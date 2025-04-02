@@ -1,0 +1,1595 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspaceName": {
+			"type": "string",
+			"metadata": "Workspace name",
+			"defaultValue": "junhuichosynapse"
+		},
+		"junhuichosynapse-WorkspaceDefaultSqlServer_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'junhuichosynapse-WorkspaceDefaultSqlServer'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:junhuichosynapse.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"junhuichosynapse-WorkspaceDefaultStorage_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://junhuisa.dfs.core.windows.net"
+		}
+	},
+	"variables": {
+		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/junhuichosynapse-WorkspaceDefaultSqlServer')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"parameters": {
+					"DBName": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"connectionString": "[parameters('junhuichosynapse-WorkspaceDefaultSqlServer_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/junhuichosynapse-WorkspaceDefaultStorage')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('junhuichosynapse-WorkspaceDefaultStorage_properties_typeProperties_url')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/AutoResolveIntegrationRuntime')]",
+			"type": "Microsoft.Synapse/workspaces/integrationRuntimes",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "AutoResolve",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 0
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/WorkspaceSystemIdentity')]",
+			"type": "Microsoft.Synapse/workspaces/credentials",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "ManagedIdentity",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/OpenWeather EDA')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "openweather",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"runAsWorkspaceSystemIdentity": false,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "30db9b0f-8668-4d21-82ab-eea2caca13d7"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/34f89b90-47ae-412e-8758-934b3c3ef8f7/resourceGroups/junhuicho-DS598/providers/Microsoft.Synapse/workspaces/junhuichosynapse/bigDataPools/openweather",
+						"name": "openweather",
+						"type": "Spark",
+						"endpoint": "https://junhuichosynapse.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/openweather",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.4",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# OpenWeather Data EDA"
+						]
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## Configuration\n",
+							"\n",
+							"- Synapse is connected to my Github, so it is necessary to secure my API key. Key Vault access is only given to my personal account.\n",
+							"    - It is smart enough that it prevents you from connecting Synapse to Github if there is a key exposed in the Synapse environment.\n",
+							"    - Secured Key: Storage Account Key\n",
+							"- Connect to my storage account where the OpenWeather data is stored."
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from notebookutils import mssparkutils\n",
+							"\n",
+							"\n",
+							"# Define Key Vault Name\n",
+							"key_vault_name = \"openweather-junhui\"\n",
+							"secret_name = \"storage-key\"  \n",
+							"\n",
+							"storage_account_name = \"junhuisa\"\n",
+							"storage_account_key = mssparkutils.credentials.getSecret(key_vault_name, secret_name)\n",
+							"\n",
+							"spark.conf.set(\n",
+							"    \"fs.azure.account.key.\" + storage_account_name + \".dfs.core.windows.net\",\n",
+							"    storage_account_key\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 1
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Read data directly from ADLS Gen2\n",
+							"container_name = \"blob1\"\n",
+							"air_pollution_folder_path = \"bronze/historical_airpollution\"  # Folder, not a single file\n",
+							"historical_weather_folder_path = \"bronze/historical_weather\"\n",
+							"\n",
+							"# Read all JSON files in the folder\n",
+							"air_pollution_df = spark.read.json(f\"abfss://{container_name}@{storage_account_name}.dfs.core.windows.net/{air_pollution_folder_path}\")\n",
+							"historical_weather_df = spark.read.json(f\"abfss://{container_name}@{storage_account_name}.dfs.core.windows.net/{historical_weather_folder_path}\")"
+						],
+						"outputs": [],
+						"execution_count": 85
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## Data Observation\n",
+							"\n",
+							"Taking a look at the raw data."
+						]
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### Historical Weather Data"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": true
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Show the DataFrame\n",
+							"\n",
+							"historical_weather_df.head()"
+						],
+						"outputs": [],
+						"execution_count": 86
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Print schema\n",
+							"\n",
+							"historical_weather_df.printSchema()"
+						],
+						"outputs": [],
+						"execution_count": 87
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Count the number of rows to see if the data is loaded correctly\n",
+							"# Ideally, there should be one row for each timestamp\n",
+							"\n",
+							"historical_weather_df.count()"
+						],
+						"outputs": [],
+						"execution_count": 88
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### Air Pollution Data"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": true
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"air_pollution_df.head()"
+						],
+						"outputs": [],
+						"execution_count": 89
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"air_pollution_df.printSchema()"
+						],
+						"outputs": [],
+						"execution_count": 90
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"air_pollution_df.count()"
+						],
+						"outputs": [],
+						"execution_count": 91
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## Restructuring DataFrames"
+						]
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### Historical Weather Data"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from pyspark.sql.functions import explode\n",
+							"\n",
+							"# Flatten the 'list' column\n",
+							"historical_weather_df = historical_weather_df.withColumn(\"list\", explode(historical_weather_df[\"list\"]))\n",
+							"print(\"Number of rows after flattening the 'list':\", historical_weather_df.count())\n",
+							"historical_weather_df.show(10, truncate=False)"
+						],
+						"outputs": [],
+						"execution_count": 92
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Instead of having a merged column of all fields,\n",
+							"# extract each field out to have a its own column\n",
+							"\n",
+							"historical_weather_df = historical_weather_df.selectExpr(\n",
+							"    \"calctime\", \n",
+							"    \"city_id\", \n",
+							"    \"cnt\", \n",
+							"    \"cod\", \n",
+							"    \"message\", \n",
+							"    \"list.dt\",\n",
+							"    \"list.main.temp as temp\",\n",
+							"    \"list.main.feels_like as feels_like\",\n",
+							"    \"list.main.humidity as humidity\",\n",
+							"    \"list.main.pressure as pressure\",\n",
+							"    \"list.main.temp_min as temp_min\",\n",
+							"    \"list.main.temp_max as temp_max\",\n",
+							"    \"list.wind.speed as wind_speed\",\n",
+							"    \"list.wind.deg as wind_deg\",\n",
+							"    \"list.wind.gust as wind_gust\",\n",
+							"    \"list.clouds.all as clouds_all\",\n",
+							"    \"list.weather.description as weather_description\",\n",
+							"    \"list.weather.icon as weather_icon\",\n",
+							"    \"list.weather.id as weather_id\",\n",
+							"    \"list.weather.main as weather_main\",\n",
+							"    \"list.rain.1h as rain_1h\",\n",
+							"    \"list.snow.1h as snow_1h\"\n",
+							")\n",
+							"\n",
+							"historical_weather_df.show(10, truncate=False)"
+						],
+						"outputs": [],
+						"execution_count": 93
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### Air Pollution Data"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"air_pollution_df = air_pollution_df.withColumn(\"list\", explode(air_pollution_df[\"list\"]))\n",
+							"print(\"Number of rows after flattening the 'list':\", air_pollution_df.count())\n",
+							"air_pollution_df.show(10, truncate=False)"
+						],
+						"outputs": [],
+						"execution_count": 94
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"air_pollution_df = air_pollution_df.selectExpr(\n",
+							"    \"coord\",\n",
+							"    \"list.dt as dt\",\n",
+							"    \"list.main.aqi as aqi\",\n",
+							"    \"list.components.co as co\",\n",
+							"    \"list.components.no as no\",\n",
+							"    \"list.components.no2 as no2\",\n",
+							"    \"list.components.o3 as o3\",\n",
+							"    \"list.components.so2 as so2\",\n",
+							"    \"list.components.pm2_5 as pm2_5\",\n",
+							"    \"list.components.pm10 as pm10\",\n",
+							"    \"list.components.nh3 as nh3\"\n",
+							")\n",
+							"\n",
+							"air_pollution_df.show(10, truncate=False)"
+						],
+						"outputs": [],
+						"execution_count": 95
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## Data Cleaning"
+						]
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### Historical Weather Data"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Copy in order to preserve the raw data\n",
+							"cleaned_weather_df = historical_weather_df.select('*')\n",
+							"\n",
+							"# Drop meaningless columns and order by timestamp\n",
+							"columns_to_drop = ['calctime', 'city_id', 'cnt', 'cod', 'message']\n",
+							"cleaned_weather_df = cleaned_weather_df.drop(*columns_to_drop).orderBy(\"dt\")\n",
+							"\n",
+							"cleaned_weather_df.show(10, truncate=False)"
+						],
+						"outputs": [],
+						"execution_count": 96
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Convert to pandas for further analysis\n",
+							"cleaned_weather_df = cleaned_weather_df.toPandas()\n",
+							"\n",
+							"cleaned_weather_df.head(10)"
+						],
+						"outputs": [],
+						"execution_count": 97
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Count the number of null values for each column\n",
+							"cleaned_weather_nan_count = cleaned_weather_df.isnull().sum()\n",
+							"\n",
+							"print(cleaned_weather_nan_count)\n",
+							"\n",
+							"# According to the OpenWeather API documentation,\n",
+							"# wind_gust - not described. A sudden increase in wind speed\n",
+							"# rain_1h - Rain volume for the last 1 hour\n",
+							"# snow_1h - Snow volume for the last 1 hour\n",
+							"\n",
+							"# Therefore, we can assume that having null values for these fields basically means 0\n",
+							"# To confirm this, check whether there is any data with these values of 0\n",
+							"print(\"Number of rows with rain_1h of value 0:\", (cleaned_weather_df['rain_1h'] == 0).sum())\n",
+							"print(\"Number of rows with snow_1h of value 0:\", (cleaned_weather_df['snow_1h'] == 0).sum())\n",
+							"print(\"Number of rows with wind_gust of value 0:\", (cleaned_weather_df['wind_gust'] == 0).sum())"
+						],
+						"outputs": [],
+						"execution_count": 98
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Fill the null values with 0\n",
+							"cleaned_weather_df.fillna(0, inplace=True)\n",
+							"\n",
+							"print(cleaned_weather_df.isnull().sum())"
+						],
+						"outputs": [],
+						"execution_count": 99
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# According to OpenWeather API documentation, default temperature unit is Kelvin\n",
+							"# Convert Kelvin into Fahrenheit for better insight\n",
+							"\n",
+							"cleaned_weather_df['temp'] = (cleaned_weather_df['temp'] - 273.15) * 9/5 + 32\n",
+							"cleaned_weather_df['feels_like'] = (cleaned_weather_df['feels_like'] - 273.15) * 9/5 + 32\n",
+							"cleaned_weather_df['temp_max'] = (cleaned_weather_df['temp_max'] - 273.15) * 9/5 + 32\n",
+							"cleaned_weather_df['temp_min'] = (cleaned_weather_df['temp_min'] - 273.15) * 9/5 + 32\n",
+							"cleaned_weather_df.head(10)"
+						],
+						"outputs": [],
+						"execution_count": 100
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### Air Pollution Data"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"cleaned_air_pollution_df = air_pollution_df.select('*')\n",
+							"\n",
+							"# Drop meaningless columns and order by timestamp\n",
+							"columns_to_drop = ['coord']\n",
+							"cleaned_air_pollution_df = cleaned_air_pollution_df.drop(*columns_to_drop).orderBy(\"dt\")\n",
+							"\n",
+							"cleaned_air_pollution_df.show(10, truncate=False)"
+						],
+						"outputs": [],
+						"execution_count": 101
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"cleaned_air_pollution_df = cleaned_air_pollution_df.toPandas()\n",
+							"\n",
+							"cleaned_air_pollution_df.head(10)"
+						],
+						"outputs": [],
+						"execution_count": 102
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"cleaned_air_pollution_nan_count = cleaned_air_pollution_df.isnull().sum()\n",
+							"\n",
+							"print(cleaned_air_pollution_nan_count)"
+						],
+						"outputs": [],
+						"execution_count": 103
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## Statistics"
+						]
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### Historical Weather Data"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Generate basic statistics\n",
+							"\n",
+							"cleaned_weather_df.describe()"
+						],
+						"outputs": [],
+						"execution_count": 104
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### Air Pollution Data"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"cleaned_air_pollution_df.describe()"
+						],
+						"outputs": [],
+						"execution_count": 105
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"Here, we can observe that there are obvious errors for 'no2' and 'pm10'. It is better not to change too much of the data, but ovbious errors like these can be replaced."
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"print(\"Obvious errors in 'no2':\")\n",
+							"print(cleaned_air_pollution_df[cleaned_air_pollution_df['no2'] < 0])\n",
+							"\n",
+							"print(\"Obvious erros in 'pm10':\")\n",
+							"print(cleaned_air_pollution_df[cleaned_air_pollution_df['pm10'] < 0])"
+						],
+						"outputs": [],
+						"execution_count": 106
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Replace -9999s with 0\n",
+							"cleaned_air_pollution_df.replace(-9999, 0, inplace=True)\n",
+							"\n",
+							"cleaned_air_pollution_df.describe()"
+						],
+						"outputs": [],
+						"execution_count": 107
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## Correlation Matrix Between Two Datasets\n",
+							"\n",
+							"In order to draw a correlation matrix between these the two datasets, two dataframes are inner-joined with a common column 'dt'."
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"import pandas as pd\n",
+							"\n",
+							"joined_df = pd.merge(cleaned_weather_df, cleaned_air_pollution_df, on=\"dt\", how=\"inner\")\n",
+							"\n",
+							"joined_df.head(10)"
+						],
+						"outputs": [],
+						"execution_count": 108
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Check shape to see how many rows are in common and features are correctly joined\n",
+							"print(joined_df.shape)"
+						],
+						"outputs": [],
+						"execution_count": 109
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Only select numercial features for correlation matrix\n",
+							"numerical_df = joined_df.select_dtypes(include=['number'])\n",
+							"\n",
+							"numerical_df.head(10)"
+						],
+						"outputs": [],
+						"execution_count": 110
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"import seaborn as sns\n",
+							"import matplotlib.pyplot as plt\n",
+							"\n",
+							"corr_matrix = numerical_df.corr()\n",
+							"\n",
+							"plt.figure(figsize=(12, 8))\n",
+							"sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)"
+						],
+						"outputs": [],
+						"execution_count": 111
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## Data Visualizations"
+						]
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### Time Series: Temperature, Feels Like"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"import matplotlib.dates as mdates\n",
+							"\n",
+							"plt.figure(figsize=(12, 6))\n",
+							"plt.plot(pd.to_datetime(cleaned_weather_df['dt'], unit='s'), cleaned_weather_df['temp'], label='Temperature', linestyle='-', alpha=0.7)\n",
+							"plt.plot(pd.to_datetime(cleaned_weather_df['dt'], unit='s'), cleaned_weather_df['feels_like'], label='Feels Like', linestyle='-', alpha=0.2)\n",
+							"\n",
+							"# Format x-axis so that it shows per month interval\n",
+							"plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))\n",
+							"plt.gca().xaxis.set_major_locator(mdates.MonthLocator(interval=1))\n",
+							"plt.xticks(rotation=45)\n",
+							"\n",
+							"\n",
+							"plt.xlabel('Time')\n",
+							"plt.ylabel('Temperature (Fahrenheit)')\n",
+							"plt.title('Temperature Over Time')\n",
+							"plt.legend()"
+						],
+						"outputs": [],
+						"execution_count": 112
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### Time Series: Difference in Actual and Apprent Temperature\n",
+							"\n",
+							"The difference is computed by -1 * ('temp' - 'feels_like'). The negation is applied to make the graph easier to read. For example, 10 means \"It feels like 10F more than it actually is\"."
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Create the plot\n",
+							"plt.figure(figsize=(12, 6))\n",
+							"plt.plot(pd.to_datetime(cleaned_weather_df['dt'], unit='s'), -1 * (cleaned_weather_df['temp'] - cleaned_weather_df['feels_like']), label='Temperature', linestyle='-', alpha=0.7)\n",
+							"\n",
+							"# Format x-axis\n",
+							"plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))  # Year-Month format\n",
+							"plt.gca().xaxis.set_major_locator(mdates.MonthLocator(interval=1))  # Show every month\n",
+							"plt.xticks(rotation=45)  # Rotate for better readability\n",
+							"\n",
+							"# Labels and title\n",
+							"plt.xlabel('Time (Year-Month)')\n",
+							"plt.ylabel('Temperature Gap')\n",
+							"plt.title('Difference in Actual and Apparent (Feels Like) Over Time')\n",
+							"plt.legend()"
+						],
+						"outputs": [],
+						"execution_count": 113
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### Distribution: Air Quality Index\n",
+							"\n",
+							"Instead of looking at the distribution of rather continuous variables like temperature, it seems more reasonable to observe the distribution of air quality index because it has only 5 classes ranging from [1,5]."
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"aqi_counts = cleaned_air_pollution_df['aqi'].value_counts().sort_index()\n",
+							"\n",
+							"plt.figure(figsize=(8, 5))\n",
+							"plt.bar(aqi_counts.index, aqi_counts.values, color='blue', alpha=0.7, edgecolor='black')\n",
+							"\n",
+							"plt.xlabel('AQI Category')\n",
+							"plt.ylabel('Count')\n",
+							"plt.title('Distribution of Air Quality Index (AQI)')\n",
+							"plt.xticks([1, 2, 3, 4, 5])  # Ensure x-axis has correct AQI classes\n",
+							"plt.grid(axis='y', linestyle='--', alpha=0.7)\n",
+							"\n",
+							"plt.show()"
+						],
+						"outputs": [],
+						"execution_count": 114
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### Humidity vs Temperature"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"plt.figure(figsize=(8, 5))\n",
+							"plt.scatter(cleaned_weather_df['temp'], cleaned_weather_df['humidity'], alpha=0.5, color='blue')\n",
+							"\n",
+							"\n",
+							"plt.xlabel('Temperature (Fahrenheit)')\n",
+							"plt.ylabel('Humidity (%)')\n",
+							"plt.title('Scatter Plot of Humidity vs Temperature')\n",
+							"plt.grid(True, linestyle='--', alpha=0.5)\n",
+							"\n",
+							"plt.show()"
+						],
+						"outputs": [],
+						"execution_count": 115
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"### "
+						]
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/batch_processing')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "d5ac1dbf-591e-4377-ae3a-c0fcbb04d78e"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "python"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"from notebookutils import mssparkutils\n",
+							"\n",
+							"\n",
+							"# Define Key Vault Name\n",
+							"key_vault_name = \"openweather-junhui\"\n",
+							"secret_name = \"storage-key\"  \n",
+							"\n",
+							"storage_account_key = mssparkutils.credentials.getSecret(key_vault_name, secret_name)\n",
+							"\n",
+							"spark.conf.set(\n",
+							"    \"fs.azure.account.key.\" + storage_account_name + \".dfs.core.windows.net\",\n",
+							"    storage_account_key\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# Set up the configuration for accessing the storage account\n",
+							"storage_account_name = \"junhuisa\"\n",
+							"container = \"blob1\"\n",
+							"\n",
+							"\n",
+							"# Define ABFSS path\n",
+							"abfss_path = f\"abfss://{container}@{storage_account_name}.dfs.core.windows.net/\"\n",
+							"\n",
+							"# Example: reading a Parquet file from ADLS Gen2\n",
+							"air_pollution_df = spark.read.parquet(f\"{abfss_path}silver/historical_airpollution/airpollution_cleaned.parquet\")\n",
+							"weather_df = spark.read.parquet(f\"{abfss_path}silver/historical_weather/weather_cleaned.parquet\")\n",
+							""
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"from pyspark.sql.functions import col\n",
+							"import pyspark.sql.functions as F\n",
+							"from pyspark.sql.window import Window\n",
+							"from pyspark.sql.types import IntegerType"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"def calculate_aqi(pollutant, concentration):\n",
+							"    breakpoints = {\n",
+							"        'O3_8hr': [(0, 54, 0, 50), (55, 70, 51, 100), (71, 85, 101, 150), (86, 105, 151, 200), (106, 200, 201, 300)],\n",
+							"        'O3_1hr': [(125, 164, 101, 150), (165, 204, 151, 200), (205, 404, 201, 300), (405, 504, 301, 400), (505, 604, 401, 500)],\n",
+							"        'PM2.5_24hr': [(0, 12, 0, 50), (12.1, 35.4, 51, 100), (35.5, 55.4, 101, 150), (55.5, 150.4, 151, 200), (150.5, 250.4, 201, 300), (250.5, 350.4, 301, 400), (350.5, 500.4, 401, 500)],\n",
+							"        'PM10_24hr': [(0, 54, 0, 50), (55, 154, 51, 100), (155, 254, 101, 150), (255, 354, 151, 200), (355, 424, 201, 300), (425, 504, 301, 400), (505, 604, 401, 500)],\n",
+							"        'CO_8hr': [(0, 4.4, 0, 50), (4.5, 9.4, 51, 100), (9.5, 12.4, 101, 150), (12.5, 15.4, 151, 200), (15.5, 30.4, 201, 300), (30.5, 40.4, 301, 400), (40.5, 50.4, 401, 500)],\n",
+							"        'SO2_1hr': [(0, 35, 0, 50), (36, 75, 51, 100), (76, 185, 101, 150), (186, 304, 151, 200)],\n",
+							"        'SO2_24hr': [(305, 604, 201, 300), (605, 804, 301, 400), (805, 1004, 401, 500)],\n",
+							"        'NO2_1hr': [(0, 53, 0, 50), (54, 100, 51, 100), (101, 360, 101, 150), (361, 649, 151, 200), (650, 1249, 201, 300), (1250, 2049, 301, 400), (2050, 3049, 401, 500)],\n",
+							"    }\n",
+							"\n",
+							"    if pollutant not in breakpoints:\n",
+							"        raise ValueError(f\"Unsupported pollutant: {pollutant}\")\n",
+							"\n",
+							"    for (Clow, Chigh, Ilow, Ihigh) in breakpoints[pollutant]:\n",
+							"        if Clow <= concentration <= Chigh:\n",
+							"            return round(((Ihigh - Ilow) / (Chigh - Clow)) * (concentration - Clow) + Ilow)\n",
+							"\n",
+							"    return None  # If the concentration is out of the given ranges"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"def calculate_rolling_average(df, column, window):\n",
+							"    windowSpec = Window.partitionBy(\"location\").orderBy(\"date_time\").rowsBetween(-window+1, 0)\n",
+							"    return F.avg(column).over(windowSpec)\n",
+							"\n",
+							"def calculate_aqi_row(row):\n",
+							"    pollutant_map = {\n",
+							"        'o3_8hr': 'O3_8hr',\n",
+							"        'o3_1hr': 'O3_1hr',\n",
+							"        'pm2_5_24hr': 'PM2.5_24hr',\n",
+							"        'pm10_24hr': 'PM10_24hr',\n",
+							"        'co_8hr': 'CO_8hr',\n",
+							"        'so2_1hr': 'SO2_1hr',\n",
+							"        'so2_24hr': 'SO2_24hr',\n",
+							"        'no2_1hr': 'NO2_1hr'\n",
+							"    }\n",
+							"    aqi_values = []\n",
+							"\n",
+							"    for col_name, pollutant in pollutant_map.items():\n",
+							"        concentration = row[col_name]\n",
+							"        if concentration is not None:\n",
+							"            aqi = calculate_aqi(pollutant, concentration)\n",
+							"            if aqi is not None:\n",
+							"                aqi_values.append(aqi)\n",
+							"\n",
+							"    if aqi_values:\n",
+							"        return max(aqi_values)\n",
+							"    return None\n",
+							"\n",
+							"def calculate_us_aqi(df):\n",
+							"    df = df.withColumn(\"o3_8hr\", calculate_rolling_average(df, \"o3\", 8))\n",
+							"    df = df.withColumn(\"o3_1hr\", df[\"o3\"])\n",
+							"    df = df.withColumn(\"pm2_5_24hr\", calculate_rolling_average(df, \"pm2_5\", 24))\n",
+							"    df = df.withColumn(\"pm10_24hr\", calculate_rolling_average(df, \"pm10\", 24))\n",
+							"    df = df.withColumn(\"co_8hr\", calculate_rolling_average(df, \"co\", 8))\n",
+							"    df = df.withColumn(\"so2_1hr\", df[\"so2\"])\n",
+							"    df = df.withColumn(\"so2_24hr\", calculate_rolling_average(df, \"so2\", 24))\n",
+							"    df = df.withColumn(\"no2_1hr\", df[\"no2\"])\n",
+							"\n",
+							"    calculate_aqi_udf = F.udf(lambda row: calculate_aqi_row(row), IntegerType())\n",
+							"    \n",
+							"    df = df.withColumn(\"us_aqi\", calculate_aqi_udf(F.struct(\n",
+							"        col(\"o3_8hr\"),\n",
+							"        col(\"o3_1hr\"),\n",
+							"        col(\"pm2_5_24hr\"),\n",
+							"        col(\"pm10_24hr\"),\n",
+							"        col(\"co_8hr\"),\n",
+							"        col(\"so2_1hr\"),\n",
+							"        col(\"so2_24hr\"),\n",
+							"        col(\"no2_1hr\")\n",
+							"    )))\n",
+							"\n",
+							"    return df\n",
+							"\n",
+							"air_pollution_df = calculate_us_aqi(air_pollution_df)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# Display selected columns to verify recalculations\n",
+							"air_pollution_df.select(\n",
+							"    \"date_time\", \n",
+							"    \"o3_8hr\", \n",
+							"    \"o3_1hr\", \n",
+							"    \"pm2_5_24hr\", \n",
+							"    \"pm10_24hr\", \n",
+							"    \"co_8hr\", \n",
+							"    \"so2_1hr\", \n",
+							"    \"so2_24hr\", \n",
+							"    \"no2_1hr\", \n",
+							"    \"us_aqi\",\n",
+							"    \"aqi\"\n",
+							").show(10)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# Aggregation by Date: Compute daily averages for temperature, humidity, wind speed, etc.\n",
+							"weather_agg_df = weather_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
+							"    F.round(F.avg(\"temp_F\")).alias(\"avg_temp_F\"),\n",
+							"    F.round(F.avg(\"humidity\"),2).alias(\"avg_humidity\"),\n",
+							"    F.round(F.avg(\"wind_speed\"),2).alias(\"avg_wind_speed\"),\n",
+							"    F.round(F.max(\"temp_max_F\")).alias(\"max_temp_F\"),\n",
+							"    F.round(F.min(\"temp_min_F\")).alias(\"min_temp_F\"),\n",
+							"    F.count(\"id\").alias(\"weather_records\")\n",
+							")\n",
+							"\n",
+							"# Weather Condition Counts: Count the occurrences of different weather conditions for each day\n",
+							"weather_condition_counts_df = weather_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\"), \"weather_main_value\").count()\n",
+							"\n",
+							"# Temperature Extremes: Identify the maximum and minimum temperatures for each day\n",
+							"temp_extremes_df = weather_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
+							"    F.max(\"temp_max_F\").alias(\"max_temp_F\"),\n",
+							"    F.min(\"temp_min_F\").alias(\"min_temp_F\")\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# Show Daily Average for temp, humidity, wind_speed, temp_max, and temp_min\n",
+							"weather_agg_df.orderBy(\"date\").show(truncate=False)\n",
+							"\n",
+							"# Show Weather Condition Counts\n",
+							"weather_condition_counts_df.orderBy(\"date\").show(truncate=False)\n",
+							"\n",
+							"# Show Temperature Extremes\n",
+							"temp_extremes_df.orderBy(\"date\").show(truncate=False)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# Daily Average AQI: Compute the daily average Air Quality Index (AQI)\n",
+							"aqi_agg_df = air_pollution_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
+							"    F.round(F.avg(\"us_aqi\")).alias(\"avg_us_aqi\")\n",
+							")\n",
+							"\n",
+							"# Pollutant Aggregation: Calculate daily averages for each pollutant\n",
+							"pollutant_agg_df = air_pollution_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
+							"    F.round(F.avg(\"co\"),2).alias(\"avg_co\"),\n",
+							"    F.round(F.avg(\"no2\"),2).alias(\"avg_no2\"),\n",
+							"    F.round(F.avg(\"o3\"),2).alias(\"avg_o3\"),\n",
+							"    F.round(F.avg(\"so2\"),2).alias(\"avg_so2\"),\n",
+							"    F.round(F.avg(\"pm2_5\"),2).alias(\"avg_pm2_5\"),\n",
+							"    F.round(F.avg(\"pm10\"),2).alias(\"avg_pm10\")\n",
+							")\n",
+							"\n",
+							"# Identify High Pollution Events: Mark days with high pollution levels based on a specified threshold\n",
+							"high_pollution_events_df = air_pollution_df.withColumn(\"high_pollution\", F.when(col(\"us_aqi\") > 100, 1).otherwise(0)).groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
+							"    F.sum(\"high_pollution\").alias(\"high_pollution_events\")\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# Show Daily Average AQI\n",
+							"aqi_agg_df.orderBy(\"date\").show(truncate=False)\n",
+							"\n",
+							"# Show Pollutant Daily Averages\n",
+							"pollutant_agg_df.orderBy(\"date\").show(truncate=False)\n",
+							"\n",
+							"# Show High Pollution Events per Day\n",
+							"high_pollution_events_df.orderBy(\"date\").show(truncate=False)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							""
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# Save aggregated data as single files\n",
+							"# can modify this to go directly to your directories\n",
+							"weather_agg_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_weather\")\n",
+							"weather_condition_counts_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_weather_conditions\")\n",
+							"temp_extremes_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_temp_extremes\")\n",
+							"aqi_agg_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_aqi\")\n",
+							"pollutant_agg_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_pollutants\")\n",
+							"high_pollution_events_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_high_pollution_events\")\n",
+							"\n",
+							"# Save processed weather data\n",
+							"weather_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/processed_weather\")\n",
+							"\n",
+							"# Save processed air pollution data\n",
+							"air_pollution_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/processed_air_pollution\")\n",
+							""
+						],
+						"outputs": [],
+						"execution_count": null
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/openweather')]",
+			"type": "Microsoft.Synapse/workspaces/bigDataPools",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"autoPause": {
+					"enabled": true,
+					"delayInMinutes": 15
+				},
+				"autoScale": {
+					"enabled": true,
+					"maxNodeCount": 3,
+					"minNodeCount": 3
+				},
+				"nodeCount": 3,
+				"nodeSize": "Small",
+				"nodeSizeFamily": "MemoryOptimized",
+				"sparkVersion": "3.4",
+				"isComputeIsolationEnabled": false,
+				"sessionLevelPackagesEnabled": true,
+				"annotations": []
+			},
+			"dependsOn": [],
+			"location": "eastus2"
+		}
+	]
+}
