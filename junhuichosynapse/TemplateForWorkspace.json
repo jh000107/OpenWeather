@@ -1268,7 +1268,7 @@
 						"spark.dynamicAllocation.enabled": "false",
 						"spark.dynamicAllocation.minExecutors": "2",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "0f62d3f8-802a-405b-bdc0-33a809e2bcbf"
+						"spark.autotune.trackingId": "0e1cd8e2-1397-4e5d-a640-bdc5d8044287"
 					}
 				},
 				"metadata": {
@@ -1487,7 +1487,7 @@
 							")"
 						],
 						"outputs": [],
-						"execution_count": 9
+						"execution_count": 8
 					},
 					{
 						"cell_type": "code",
@@ -1503,7 +1503,7 @@
 							"temp_extremes_df.orderBy(\"date\").show(truncate=False)"
 						],
 						"outputs": [],
-						"execution_count": 10
+						"execution_count": 9
 					},
 					{
 						"cell_type": "code",
@@ -1530,7 +1530,7 @@
 							")"
 						],
 						"outputs": [],
-						"execution_count": 11
+						"execution_count": 10
 					},
 					{
 						"cell_type": "code",
@@ -1546,7 +1546,7 @@
 							"high_pollution_events_df.orderBy(\"date\").show(truncate=False)"
 						],
 						"outputs": [],
-						"execution_count": 12
+						"execution_count": 11
 					},
 					{
 						"cell_type": "code",
@@ -1574,7 +1574,7 @@
 							""
 						],
 						"outputs": [],
-						"execution_count": 19
+						"execution_count": 12
 					}
 				]
 			},
