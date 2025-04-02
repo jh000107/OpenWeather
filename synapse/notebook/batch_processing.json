@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "c9da2102-241a-47cb-9f9e-718576a78d57"
+				"spark.autotune.trackingId": "8b95b1e6-6c4f-4ad6-a26f-487a6e1cf6cc"
 			}
 		},
 		"metadata": {
@@ -222,7 +222,7 @@
 					"    F.min(\"temp_min_C\").alias(\"min_temp_C\")\n",
 					")"
 				],
-				"execution_count": 9
+				"execution_count": 8
 			},
 			{
 				"cell_type": "code",
@@ -236,7 +236,7 @@
 					"# Show Temperature Extremes\n",
 					"temp_extremes_df.orderBy(\"date\").show(truncate=False)"
 				],
-				"execution_count": 10
+				"execution_count": 9
 			},
 			{
 				"cell_type": "code",
@@ -261,7 +261,7 @@
 					"    F.sum(\"high_pollution\").alias(\"high_pollution_events\")\n",
 					")"
 				],
-				"execution_count": 11
+				"execution_count": 10
 			},
 			{
 				"cell_type": "code",
@@ -275,7 +275,7 @@
 					"# Show High Pollution Events per Day\n",
 					"high_pollution_events_df.orderBy(\"date\").show(truncate=False)"
 				],
-				"execution_count": 12
+				"execution_count": 11
 			},
 			{
 				"cell_type": "code",
@@ -301,7 +301,7 @@
 					"save_and_rename(air_pollution_df, f\"{abfss_path}/gold/processed_air_pollution\", \"processed_air_pollution.parquet\")\n",
 					""
 				],
-				"execution_count": 19
+				"execution_count": 12
 			}
 		]
 	}
