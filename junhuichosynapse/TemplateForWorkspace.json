@@ -1254,6 +1254,10 @@
 			"properties": {
 				"nbformat": 4,
 				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "openweather",
+					"type": "BigDataPoolReference"
+				},
 				"sessionProperties": {
 					"driverMemory": "28g",
 					"driverCores": 4,
@@ -1264,7 +1268,7 @@
 						"spark.dynamicAllocation.enabled": "false",
 						"spark.dynamicAllocation.minExecutors": "2",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "d5ac1dbf-591e-4377-ae3a-c0fcbb04d78e"
+						"spark.autotune.trackingId": "0f62d3f8-802a-405b-bdc0-33a809e2bcbf"
 					}
 				},
 				"metadata": {
@@ -1272,10 +1276,25 @@
 					"enableDebugMode": false,
 					"kernelspec": {
 						"name": "synapse_pyspark",
-						"display_name": "python"
+						"display_name": "Synapse PySpark"
 					},
 					"language_info": {
 						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/34f89b90-47ae-412e-8758-934b3c3ef8f7/resourceGroups/junhuicho-DS598/providers/Microsoft.Synapse/workspaces/junhuichosynapse/bigDataPools/openweather",
+						"name": "openweather",
+						"type": "Spark",
+						"endpoint": "https://junhuichosynapse.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/openweather",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.4",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28,
+						"automaticScaleJobs": false
 					},
 					"sessionKeepAliveTimeout": 30
 				},
@@ -1290,7 +1309,7 @@
 							"# Define Key Vault Name\n",
 							"key_vault_name = \"openweather-junhui\"\n",
 							"secret_name = \"storage-key\"  \n",
-							"\n",
+							"storage_account_name = \"junhuisa\"\n",
 							"storage_account_key = mssparkutils.credentials.getSecret(key_vault_name, secret_name)\n",
 							"\n",
 							"spark.conf.set(\n",
@@ -1299,14 +1318,13 @@
 							")"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 2
 					},
 					{
 						"cell_type": "code",
 						"metadata": {},
 						"source": [
 							"# Set up the configuration for accessing the storage account\n",
-							"storage_account_name = \"junhuisa\"\n",
 							"container = \"blob1\"\n",
 							"\n",
 							"\n",
@@ -1319,7 +1337,7 @@
 							""
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 3
 					},
 					{
 						"cell_type": "code",
@@ -1331,7 +1349,7 @@
 							"from pyspark.sql.types import IntegerType"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 4
 					},
 					{
 						"cell_type": "code",
@@ -1359,7 +1377,7 @@
 							"    return None  # If the concentration is out of the given ranges"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 5
 					},
 					{
 						"cell_type": "code",
@@ -1421,7 +1439,7 @@
 							"air_pollution_df = calculate_us_aqi(air_pollution_df)"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 6
 					},
 					{
 						"cell_type": "code",
@@ -1443,7 +1461,7 @@
 							").show(10)"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 7
 					},
 					{
 						"cell_type": "code",
@@ -1451,11 +1469,11 @@
 						"source": [
 							"# Aggregation by Date: Compute daily averages for temperature, humidity, wind speed, etc.\n",
 							"weather_agg_df = weather_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
-							"    F.round(F.avg(\"temp_F\")).alias(\"avg_temp_F\"),\n",
+							"    F.round(F.avg(\"temp_C\")).alias(\"avg_temp_C\"),\n",
 							"    F.round(F.avg(\"humidity\"),2).alias(\"avg_humidity\"),\n",
 							"    F.round(F.avg(\"wind_speed\"),2).alias(\"avg_wind_speed\"),\n",
-							"    F.round(F.max(\"temp_max_F\")).alias(\"max_temp_F\"),\n",
-							"    F.round(F.min(\"temp_min_F\")).alias(\"min_temp_F\"),\n",
+							"    F.round(F.max(\"temp_max_C\")).alias(\"max_temp_C\"),\n",
+							"    F.round(F.min(\"temp_min_C\")).alias(\"min_temp_C\"),\n",
 							"    F.count(\"id\").alias(\"weather_records\")\n",
 							")\n",
 							"\n",
@@ -1464,12 +1482,12 @@
 							"\n",
 							"# Temperature Extremes: Identify the maximum and minimum temperatures for each day\n",
 							"temp_extremes_df = weather_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
-							"    F.max(\"temp_max_F\").alias(\"max_temp_F\"),\n",
-							"    F.min(\"temp_min_F\").alias(\"min_temp_F\")\n",
+							"    F.max(\"temp_max_C\").alias(\"max_temp_C\"),\n",
+							"    F.min(\"temp_min_C\").alias(\"min_temp_C\")\n",
 							")"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 9
 					},
 					{
 						"cell_type": "code",
@@ -1485,7 +1503,7 @@
 							"temp_extremes_df.orderBy(\"date\").show(truncate=False)"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 10
 					},
 					{
 						"cell_type": "code",
@@ -1512,7 +1530,7 @@
 							")"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 11
 					},
 					{
 						"cell_type": "code",
@@ -1528,39 +1546,35 @@
 							"high_pollution_events_df.orderBy(\"date\").show(truncate=False)"
 						],
 						"outputs": [],
-						"execution_count": null
+						"execution_count": 12
 					},
 					{
 						"cell_type": "code",
 						"metadata": {},
 						"source": [
+							"def save_and_rename(df, directory_path, filename):\n",
+							"    df.coalesce(1).write.mode(\"overwrite\").parquet(directory_path)\n",
+							"\n",
+							"    files = mssparkutils.fs.ls(directory_path)\n",
+							"    for file in files:\n",
+							"        if file.name.startswith(\"part-\") and file.name.endswith(\".parquet\"):\n",
+							"            mssparkutils.fs.mv(file.path, directory_path + '/' + filename)\n",
+							"            break\n",
+							"    \n",
+							"    return\n",
+							"\n",
+							"save_and_rename(weather_agg_df, f\"{abfss_path}/gold/agg_weather\", \"agg_weather.parquet\")\n",
+							"save_and_rename(weather_condition_counts_df, f\"{abfss_path}/gold/agg_weather_conditions\", \"agg_weather_conditions.parquet\")\n",
+							"save_and_rename(temp_extremes_df, f\"{abfss_path}/gold/agg_temp_extremes\", \"agg_temp_extremes.parquet\")\n",
+							"save_and_rename(aqi_agg_df, f\"{abfss_path}/gold/agg_aqi\", \"agg_aqi.parquet\")\n",
+							"save_and_rename(pollutant_agg_df, f\"{abfss_path}/gold/agg_pollutants\", \"agg_pollutants.parquet\")\n",
+							"save_and_rename(high_pollution_events_df, f\"{abfss_path}/gold/agg_high_pollution_events\", \"agg_high_pollution_events.parquet\")\n",
+							"save_and_rename(weather_df, f\"{abfss_path}/gold/processed_weather\", \"processed_weather.parquet\")\n",
+							"save_and_rename(air_pollution_df, f\"{abfss_path}/gold/processed_air_pollution\", \"processed_air_pollution.parquet\")\n",
 							""
 						],
 						"outputs": [],
-						"execution_count": null
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"# Save aggregated data as single files\n",
-							"# can modify this to go directly to your directories\n",
-							"weather_agg_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_weather\")\n",
-							"weather_condition_counts_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_weather_conditions\")\n",
-							"temp_extremes_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_temp_extremes\")\n",
-							"aqi_agg_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_aqi\")\n",
-							"pollutant_agg_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_pollutants\")\n",
-							"high_pollution_events_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_high_pollution_events\")\n",
-							"\n",
-							"# Save processed weather data\n",
-							"weather_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/processed_weather\")\n",
-							"\n",
-							"# Save processed air pollution data\n",
-							"air_pollution_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/processed_air_pollution\")\n",
-							""
-						],
-						"outputs": [],
-						"execution_count": null
+						"execution_count": 19
 					}
 				]
 			},
