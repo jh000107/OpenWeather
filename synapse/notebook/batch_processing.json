@@ -1,0 +1,292 @@
+{
+	"name": "batch_processing",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "fc83b580-9775-431d-8f46-47725d196dbf"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "python"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"from notebookutils import mssparkutils\n",
+					"\n",
+					"\n",
+					"# Define Key Vault Name\n",
+					"key_vault_name = \"openweather-junhui\"\n",
+					"secret_name = \"storage-key\"  \n",
+					"\n",
+					"storage_account_key = mssparkutils.credentials.getSecret(key_vault_name, secret_name)\n",
+					"\n",
+					"spark.conf.set(\n",
+					"    \"fs.azure.account.key.\" + storage_account_name + \".dfs.core.windows.net\",\n",
+					"    storage_account_key\n",
+					")"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Set up the configuration for accessing the storage account\n",
+					"storage_account_name = \"junhuisa\"\n",
+					"container = \"blob1\"\n",
+					"\n",
+					"\n",
+					"# Define ABFSS path\n",
+					"abfss_path = f\"abfss://{container}@{storage_account_name}.dfs.core.windows.net/\"\n",
+					"\n",
+					"# Example: reading a Parquet file from ADLS Gen2\n",
+					"air_pollution_df = spark.read.parquet(f\"{abfss_path}silver/historical_airpollution/airpollution_cleaned.parquet\")\n",
+					"weather_df = spark.read.parquet(f\"{abfss_path}silver/historical_weather/weather_cleaned.parquet\")\n",
+					""
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"from pyspark.sql.functions import col\n",
+					"import pyspark.sql.functions as F\n",
+					"from pyspark.sql.window import Window\n",
+					"from pyspark.sql.types import IntegerType"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def calculate_aqi(pollutant, concentration):\n",
+					"    breakpoints = {\n",
+					"        'O3_8hr': [(0, 54, 0, 50), (55, 70, 51, 100), (71, 85, 101, 150), (86, 105, 151, 200), (106, 200, 201, 300)],\n",
+					"        'O3_1hr': [(125, 164, 101, 150), (165, 204, 151, 200), (205, 404, 201, 300), (405, 504, 301, 400), (505, 604, 401, 500)],\n",
+					"        'PM2.5_24hr': [(0, 12, 0, 50), (12.1, 35.4, 51, 100), (35.5, 55.4, 101, 150), (55.5, 150.4, 151, 200), (150.5, 250.4, 201, 300), (250.5, 350.4, 301, 400), (350.5, 500.4, 401, 500)],\n",
+					"        'PM10_24hr': [(0, 54, 0, 50), (55, 154, 51, 100), (155, 254, 101, 150), (255, 354, 151, 200), (355, 424, 201, 300), (425, 504, 301, 400), (505, 604, 401, 500)],\n",
+					"        'CO_8hr': [(0, 4.4, 0, 50), (4.5, 9.4, 51, 100), (9.5, 12.4, 101, 150), (12.5, 15.4, 151, 200), (15.5, 30.4, 201, 300), (30.5, 40.4, 301, 400), (40.5, 50.4, 401, 500)],\n",
+					"        'SO2_1hr': [(0, 35, 0, 50), (36, 75, 51, 100), (76, 185, 101, 150), (186, 304, 151, 200)],\n",
+					"        'SO2_24hr': [(305, 604, 201, 300), (605, 804, 301, 400), (805, 1004, 401, 500)],\n",
+					"        'NO2_1hr': [(0, 53, 0, 50), (54, 100, 51, 100), (101, 360, 101, 150), (361, 649, 151, 200), (650, 1249, 201, 300), (1250, 2049, 301, 400), (2050, 3049, 401, 500)],\n",
+					"    }\n",
+					"\n",
+					"    if pollutant not in breakpoints:\n",
+					"        raise ValueError(f\"Unsupported pollutant: {pollutant}\")\n",
+					"\n",
+					"    for (Clow, Chigh, Ilow, Ihigh) in breakpoints[pollutant]:\n",
+					"        if Clow <= concentration <= Chigh:\n",
+					"            return round(((Ihigh - Ilow) / (Chigh - Clow)) * (concentration - Clow) + Ilow)\n",
+					"\n",
+					"    return None  # If the concentration is out of the given ranges"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def calculate_rolling_average(df, column, window):\n",
+					"    windowSpec = Window.partitionBy(\"location\").orderBy(\"date_time\").rowsBetween(-window+1, 0)\n",
+					"    return F.avg(column).over(windowSpec)\n",
+					"\n",
+					"def calculate_aqi_row(row):\n",
+					"    pollutant_map = {\n",
+					"        'o3_8hr': 'O3_8hr',\n",
+					"        'o3_1hr': 'O3_1hr',\n",
+					"        'pm2_5_24hr': 'PM2.5_24hr',\n",
+					"        'pm10_24hr': 'PM10_24hr',\n",
+					"        'co_8hr': 'CO_8hr',\n",
+					"        'so2_1hr': 'SO2_1hr',\n",
+					"        'so2_24hr': 'SO2_24hr',\n",
+					"        'no2_1hr': 'NO2_1hr'\n",
+					"    }\n",
+					"    aqi_values = []\n",
+					"\n",
+					"    for col_name, pollutant in pollutant_map.items():\n",
+					"        concentration = row[col_name]\n",
+					"        if concentration is not None:\n",
+					"            aqi = calculate_aqi(pollutant, concentration)\n",
+					"            if aqi is not None:\n",
+					"                aqi_values.append(aqi)\n",
+					"\n",
+					"    if aqi_values:\n",
+					"        return max(aqi_values)\n",
+					"    return None\n",
+					"\n",
+					"def calculate_us_aqi(df):\n",
+					"    df = df.withColumn(\"o3_8hr\", calculate_rolling_average(df, \"o3\", 8))\n",
+					"    df = df.withColumn(\"o3_1hr\", df[\"o3\"])\n",
+					"    df = df.withColumn(\"pm2_5_24hr\", calculate_rolling_average(df, \"pm2_5\", 24))\n",
+					"    df = df.withColumn(\"pm10_24hr\", calculate_rolling_average(df, \"pm10\", 24))\n",
+					"    df = df.withColumn(\"co_8hr\", calculate_rolling_average(df, \"co\", 8))\n",
+					"    df = df.withColumn(\"so2_1hr\", df[\"so2\"])\n",
+					"    df = df.withColumn(\"so2_24hr\", calculate_rolling_average(df, \"so2\", 24))\n",
+					"    df = df.withColumn(\"no2_1hr\", df[\"no2\"])\n",
+					"\n",
+					"    calculate_aqi_udf = F.udf(lambda row: calculate_aqi_row(row), IntegerType())\n",
+					"    \n",
+					"    df = df.withColumn(\"us_aqi\", calculate_aqi_udf(F.struct(\n",
+					"        col(\"o3_8hr\"),\n",
+					"        col(\"o3_1hr\"),\n",
+					"        col(\"pm2_5_24hr\"),\n",
+					"        col(\"pm10_24hr\"),\n",
+					"        col(\"co_8hr\"),\n",
+					"        col(\"so2_1hr\"),\n",
+					"        col(\"so2_24hr\"),\n",
+					"        col(\"no2_1hr\")\n",
+					"    )))\n",
+					"\n",
+					"    return df\n",
+					"\n",
+					"air_pollution_df = calculate_us_aqi(air_pollution_df)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Display selected columns to verify recalculations\n",
+					"air_pollution_df.select(\n",
+					"    \"date_time\", \n",
+					"    \"o3_8hr\", \n",
+					"    \"o3_1hr\", \n",
+					"    \"pm2_5_24hr\", \n",
+					"    \"pm10_24hr\", \n",
+					"    \"co_8hr\", \n",
+					"    \"so2_1hr\", \n",
+					"    \"so2_24hr\", \n",
+					"    \"no2_1hr\", \n",
+					"    \"us_aqi\",\n",
+					"    \"aqi\"\n",
+					").show(10)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Aggregation by Date: Compute daily averages for temperature, humidity, wind speed, etc.\n",
+					"weather_agg_df = weather_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
+					"    F.round(F.avg(\"temp_F\")).alias(\"avg_temp_F\"),\n",
+					"    F.round(F.avg(\"humidity\"),2).alias(\"avg_humidity\"),\n",
+					"    F.round(F.avg(\"wind_speed\"),2).alias(\"avg_wind_speed\"),\n",
+					"    F.round(F.max(\"temp_max_F\")).alias(\"max_temp_F\"),\n",
+					"    F.round(F.min(\"temp_min_F\")).alias(\"min_temp_F\"),\n",
+					"    F.count(\"id\").alias(\"weather_records\")\n",
+					")\n",
+					"\n",
+					"# Weather Condition Counts: Count the occurrences of different weather conditions for each day\n",
+					"weather_condition_counts_df = weather_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\"), \"weather_main_value\").count()\n",
+					"\n",
+					"# Temperature Extremes: Identify the maximum and minimum temperatures for each day\n",
+					"temp_extremes_df = weather_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
+					"    F.max(\"temp_max_F\").alias(\"max_temp_F\"),\n",
+					"    F.min(\"temp_min_F\").alias(\"min_temp_F\")\n",
+					")"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Show Daily Average for temp, humidity, wind_speed, temp_max, and temp_min\n",
+					"weather_agg_df.orderBy(\"date\").show(truncate=False)\n",
+					"\n",
+					"# Show Weather Condition Counts\n",
+					"weather_condition_counts_df.orderBy(\"date\").show(truncate=False)\n",
+					"\n",
+					"# Show Temperature Extremes\n",
+					"temp_extremes_df.orderBy(\"date\").show(truncate=False)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Daily Average AQI: Compute the daily average Air Quality Index (AQI)\n",
+					"aqi_agg_df = air_pollution_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
+					"    F.round(F.avg(\"us_aqi\")).alias(\"avg_us_aqi\")\n",
+					")\n",
+					"\n",
+					"# Pollutant Aggregation: Calculate daily averages for each pollutant\n",
+					"pollutant_agg_df = air_pollution_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
+					"    F.round(F.avg(\"co\"),2).alias(\"avg_co\"),\n",
+					"    F.round(F.avg(\"no2\"),2).alias(\"avg_no2\"),\n",
+					"    F.round(F.avg(\"o3\"),2).alias(\"avg_o3\"),\n",
+					"    F.round(F.avg(\"so2\"),2).alias(\"avg_so2\"),\n",
+					"    F.round(F.avg(\"pm2_5\"),2).alias(\"avg_pm2_5\"),\n",
+					"    F.round(F.avg(\"pm10\"),2).alias(\"avg_pm10\")\n",
+					")\n",
+					"\n",
+					"# Identify High Pollution Events: Mark days with high pollution levels based on a specified threshold\n",
+					"high_pollution_events_df = air_pollution_df.withColumn(\"high_pollution\", F.when(col(\"us_aqi\") > 100, 1).otherwise(0)).groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
+					"    F.sum(\"high_pollution\").alias(\"high_pollution_events\")\n",
+					")"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Show Daily Average AQI\n",
+					"aqi_agg_df.orderBy(\"date\").show(truncate=False)\n",
+					"\n",
+					"# Show Pollutant Daily Averages\n",
+					"pollutant_agg_df.orderBy(\"date\").show(truncate=False)\n",
+					"\n",
+					"# Show High Pollution Events per Day\n",
+					"high_pollution_events_df.orderBy(\"date\").show(truncate=False)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					""
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Save aggregated data as single files\n",
+					"# can modify this to go directly to your directories\n",
+					"weather_agg_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_weather\")\n",
+					"weather_condition_counts_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_weather_conditions\")\n",
+					"temp_extremes_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_temp_extremes\")\n",
+					"aqi_agg_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_aqi\")\n",
+					"pollutant_agg_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_pollutants\")\n",
+					"high_pollution_events_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/agg_high_pollution_events\")\n",
+					"\n",
+					"# Save processed weather data\n",
+					"weather_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/processed_weather\")\n",
+					"\n",
+					"# Save processed air pollution data\n",
+					"air_pollution_df.coalesce(1).write.mode(\"overwrite\").parquet(f\"{abfss_path}/gold/processed_air_pollution\")\n",
+					""
+				],
+				"execution_count": null
+			}
+		]
+	}
+}
