@@ -1268,7 +1268,7 @@
 						"spark.dynamicAllocation.enabled": "false",
 						"spark.dynamicAllocation.minExecutors": "2",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "0e1cd8e2-1397-4e5d-a640-bdc5d8044287"
+						"spark.autotune.trackingId": "da35aa30-1fe9-4f1e-aebd-7c0e0ab61453"
 					}
 				},
 				"metadata": {
@@ -1318,7 +1318,7 @@
 							")"
 						],
 						"outputs": [],
-						"execution_count": 2
+						"execution_count": 1
 					},
 					{
 						"cell_type": "code",
@@ -1337,19 +1337,19 @@
 							""
 						],
 						"outputs": [],
-						"execution_count": 3
+						"execution_count": 2
 					},
 					{
 						"cell_type": "code",
 						"metadata": {},
 						"source": [
-							"from pyspark.sql.functions import col\n",
+							"from pyspark.sql.functions import col, round\n",
 							"import pyspark.sql.functions as F\n",
 							"from pyspark.sql.window import Window\n",
 							"from pyspark.sql.types import IntegerType"
 						],
 						"outputs": [],
-						"execution_count": 4
+						"execution_count": 9
 					},
 					{
 						"cell_type": "code",
@@ -1377,7 +1377,7 @@
 							"    return None  # If the concentration is out of the given ranges"
 						],
 						"outputs": [],
-						"execution_count": 5
+						"execution_count": 4
 					},
 					{
 						"cell_type": "code",
@@ -1439,7 +1439,7 @@
 							"air_pollution_df = calculate_us_aqi(air_pollution_df)"
 						],
 						"outputs": [],
-						"execution_count": 6
+						"execution_count": 5
 					},
 					{
 						"cell_type": "code",
@@ -1461,7 +1461,24 @@
 							").show(10)"
 						],
 						"outputs": [],
-						"execution_count": 7
+						"execution_count": 6
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# Add temp_F separately\n",
+							"\n",
+							"weather_df = weather_df.withColumn(\"temp_F\", round((col(\"temp_K\") - 273.15) * 9 / 5 + 32, 2))\n",
+							"\n",
+							"weather_df.select(\n",
+							"    \"temp_K\",\n",
+							"    \"temp_C\",\n",
+							"    \"temp_F\"\n",
+							").show(10)"
+						],
+						"outputs": [],
+						"execution_count": 10
 					},
 					{
 						"cell_type": "code",
@@ -1469,11 +1486,11 @@
 						"source": [
 							"# Aggregation by Date: Compute daily averages for temperature, humidity, wind speed, etc.\n",
 							"weather_agg_df = weather_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
-							"    F.round(F.avg(\"temp_C\")).alias(\"avg_temp_C\"),\n",
+							"    F.round(F.avg(\"temp_F\")).alias(\"avg_temp_F\"),\n",
 							"    F.round(F.avg(\"humidity\"),2).alias(\"avg_humidity\"),\n",
 							"    F.round(F.avg(\"wind_speed\"),2).alias(\"avg_wind_speed\"),\n",
-							"    F.round(F.max(\"temp_max_C\")).alias(\"max_temp_C\"),\n",
-							"    F.round(F.min(\"temp_min_C\")).alias(\"min_temp_C\"),\n",
+							"    F.round(F.max(\"temp_max_F\")).alias(\"max_temp_F\"),\n",
+							"    F.round(F.min(\"temp_min_F\")).alias(\"min_temp_F\"),\n",
 							"    F.count(\"id\").alias(\"weather_records\")\n",
 							")\n",
 							"\n",
@@ -1482,12 +1499,12 @@
 							"\n",
 							"# Temperature Extremes: Identify the maximum and minimum temperatures for each day\n",
 							"temp_extremes_df = weather_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
-							"    F.max(\"temp_max_C\").alias(\"max_temp_C\"),\n",
-							"    F.min(\"temp_min_C\").alias(\"min_temp_C\")\n",
+							"    F.max(\"temp_max_F\").alias(\"max_temp_F\"),\n",
+							"    F.min(\"temp_min_F\").alias(\"min_temp_F\")\n",
 							")"
 						],
 						"outputs": [],
-						"execution_count": 8
+						"execution_count": 11
 					},
 					{
 						"cell_type": "code",
@@ -1503,7 +1520,7 @@
 							"temp_extremes_df.orderBy(\"date\").show(truncate=False)"
 						],
 						"outputs": [],
-						"execution_count": 9
+						"execution_count": 12
 					},
 					{
 						"cell_type": "code",
@@ -1530,7 +1547,7 @@
 							")"
 						],
 						"outputs": [],
-						"execution_count": 10
+						"execution_count": 13
 					},
 					{
 						"cell_type": "code",
@@ -1546,7 +1563,7 @@
 							"high_pollution_events_df.orderBy(\"date\").show(truncate=False)"
 						],
 						"outputs": [],
-						"execution_count": 11
+						"execution_count": 14
 					},
 					{
 						"cell_type": "code",
@@ -1574,7 +1591,7 @@
 							""
 						],
 						"outputs": [],
-						"execution_count": 12
+						"execution_count": 15
 					}
 				]
 			},
