@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "8b95b1e6-6c4f-4ad6-a26f-487a6e1cf6cc"
+				"spark.autotune.trackingId": "980803bd-fa7a-469f-ab73-a0d81dd4dffd"
 			}
 		},
 		"metadata": {
@@ -65,7 +65,7 @@
 					"    storage_account_key\n",
 					")"
 				],
-				"execution_count": 2
+				"execution_count": 1
 			},
 			{
 				"cell_type": "code",
@@ -82,17 +82,17 @@
 					"weather_df = spark.read.parquet(f\"{abfss_path}silver/historical_weather/weather_cleaned.parquet\")\n",
 					""
 				],
-				"execution_count": 3
+				"execution_count": 2
 			},
 			{
 				"cell_type": "code",
 				"source": [
-					"from pyspark.sql.functions import col\n",
+					"from pyspark.sql.functions import col, round\n",
 					"import pyspark.sql.functions as F\n",
 					"from pyspark.sql.window import Window\n",
 					"from pyspark.sql.types import IntegerType"
 				],
-				"execution_count": 4
+				"execution_count": 9
 			},
 			{
 				"cell_type": "code",
@@ -118,7 +118,7 @@
 					"\n",
 					"    return None  # If the concentration is out of the given ranges"
 				],
-				"execution_count": 5
+				"execution_count": 4
 			},
 			{
 				"cell_type": "code",
@@ -178,7 +178,7 @@
 					"\n",
 					"air_pollution_df = calculate_us_aqi(air_pollution_df)"
 				],
-				"execution_count": 6
+				"execution_count": 5
 			},
 			{
 				"cell_type": "code",
@@ -198,18 +198,33 @@
 					"    \"aqi\"\n",
 					").show(10)"
 				],
-				"execution_count": 7
+				"execution_count": 6
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Add temp_F separately\n",
+					"\n",
+					"weather_df = weather_df.withColumn(\"temp_F\", round((col(\"temp_K\") - 273.15) * 9 / 5 + 32, 2))\n",
+					"\n",
+					"weather_df.select(\n",
+					"    \"temp_K\",\n",
+					"    \"temp_C\",\n",
+					"    \"temp_F\"\n",
+					").show(10)"
+				],
+				"execution_count": 10
 			},
 			{
 				"cell_type": "code",
 				"source": [
 					"# Aggregation by Date: Compute daily averages for temperature, humidity, wind speed, etc.\n",
 					"weather_agg_df = weather_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
-					"    F.round(F.avg(\"temp_C\")).alias(\"avg_temp_C\"),\n",
+					"    F.round(F.avg(\"temp_F\")).alias(\"avg_temp_F\"),\n",
 					"    F.round(F.avg(\"humidity\"),2).alias(\"avg_humidity\"),\n",
 					"    F.round(F.avg(\"wind_speed\"),2).alias(\"avg_wind_speed\"),\n",
-					"    F.round(F.max(\"temp_max_C\")).alias(\"max_temp_C\"),\n",
-					"    F.round(F.min(\"temp_min_C\")).alias(\"min_temp_C\"),\n",
+					"    F.round(F.max(\"temp_max_F\")).alias(\"max_temp_F\"),\n",
+					"    F.round(F.min(\"temp_min_F\")).alias(\"min_temp_F\"),\n",
 					"    F.count(\"id\").alias(\"weather_records\")\n",
 					")\n",
 					"\n",
@@ -218,11 +233,11 @@
 					"\n",
 					"# Temperature Extremes: Identify the maximum and minimum temperatures for each day\n",
 					"temp_extremes_df = weather_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
-					"    F.max(\"temp_max_C\").alias(\"max_temp_C\"),\n",
-					"    F.min(\"temp_min_C\").alias(\"min_temp_C\")\n",
+					"    F.max(\"temp_max_F\").alias(\"max_temp_F\"),\n",
+					"    F.min(\"temp_min_F\").alias(\"min_temp_F\")\n",
 					")"
 				],
-				"execution_count": 8
+				"execution_count": 11
 			},
 			{
 				"cell_type": "code",
@@ -236,7 +251,7 @@
 					"# Show Temperature Extremes\n",
 					"temp_extremes_df.orderBy(\"date\").show(truncate=False)"
 				],
-				"execution_count": 9
+				"execution_count": 12
 			},
 			{
 				"cell_type": "code",
@@ -261,7 +276,7 @@
 					"    F.sum(\"high_pollution\").alias(\"high_pollution_events\")\n",
 					")"
 				],
-				"execution_count": 10
+				"execution_count": 13
 			},
 			{
 				"cell_type": "code",
@@ -275,7 +290,7 @@
 					"# Show High Pollution Events per Day\n",
 					"high_pollution_events_df.orderBy(\"date\").show(truncate=False)"
 				],
-				"execution_count": 11
+				"execution_count": 14
 			},
 			{
 				"cell_type": "code",
@@ -301,7 +316,7 @@
 					"save_and_rename(air_pollution_df, f\"{abfss_path}/gold/processed_air_pollution\", \"processed_air_pollution.parquet\")\n",
 					""
 				],
-				"execution_count": 12
+				"execution_count": 15
 			}
 		]
 	}
