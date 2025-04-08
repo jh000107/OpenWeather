@@ -2,13 +2,13 @@
 	"name": "Drop Script",
 	"properties": {
 		"content": {
-			"query": "-- Drop external tables\nDROP EXTERNAL TABLE ExternalAggAQI;\nDROP EXTERNAL TABLE ExternalAggPollutants;\nDROP EXTERNAL TABLE ExternalAggTempExtremes;\nDROP EXTERNAL TABLE ExternalAggWeather;\nDROP EXTERNAL TABLE ExternalAggWeatherConditions;\nDROP EXTERNAL TABLE ExternalAirPollution;\nDROP EXTERNAL TABLE ExternalHighPollutionEvents;\nDROP EXTERNAL TABLE ExternalWeather;\nGO\n\n-- Drop regular tables\nDROP TABLE AggAQI;\nDROP TABLE AggPollutants;\nDROP TABLE AggTempExtremes;\nDROP TABLE AggWeather;\nDROP TABLE AggWeatherConditions;\nDROP TABLE DimDateTime;\nDROP TABLE DimLocation;\nDROP TABLE DimAirPollution;\nDROP TABLE DimWeatherCondition;\nDROP TABLE FactWeather;\nDROP TABLE HighPollutionEvents;\nDROP TABLE DimDate;\nGO",
+			"query": "-- Drop external tables\n-- DROP EXTERNAL TABLE ExternalAggAQI;\n-- DROP EXTERNAL TABLE ExternalAggPollutants;\n-- DROP EXTERNAL TABLE ExternalAggTempExtremes;\n-- DROP EXTERNAL TABLE ExternalAggWeather;\n-- DROP EXTERNAL TABLE ExternalAggWeatherConditions;\n-- DROP EXTERNAL TABLE ExternalAirPollution;\n-- DROP EXTERNAL TABLE ExternalHighPollutionEvents;\nDROP EXTERNAL TABLE ExternalWeather;\nGO\n\n-- Drop regular tables\n-- DROP TABLE AggAQI;\n-- DROP TABLE AggPollutants;\n-- DROP TABLE AggTempExtremes;\n-- DROP TABLE AggWeather;\n-- DROP TABLE AggWeatherConditions;\n-- DROP TABLE DimDateTime;\n-- DROP TABLE DimLocation;\n-- DROP TABLE DimAirPollution;\n-- DROP TABLE DimWeatherCondition;\nDROP TABLE FactWeather;\n-- DROP TABLE HighPollutionEvents;\n-- DROP TABLE DimDate;\nGO",
 			"metadata": {
 				"language": "sql"
 			},
 			"currentConnection": {
-				"databaseName": "master",
-				"poolName": "Built-in"
+				"databaseName": "ds598sqlpool",
+				"poolName": "ds598sqlpool"
 			},
 			"resultLimit": 5000
 		},
