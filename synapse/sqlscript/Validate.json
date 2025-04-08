@@ -1,0 +1,17 @@
+{
+	"name": "Validate",
+	"properties": {
+		"content": {
+			"query": "SELECT TOP 10 * FROM FactWeather;\nSELECT TOP 10 * FROM DimLocation;\nSELECT TOP 10 * FROM DimAirPollution;\nSELECT TOP 10 * FROM DimWeatherCondition;\nSELECT TOP 10 * FROM DimDateTime;\nSELECT TOP 10 * FROM DimDate;\nSELECT TOP 10 * FROM AggWeather;\nSELECT TOP 10 * FROM AggWeatherConditions;\nSELECT TOP 10 * FROM AggTempExtremes;\nSELECT TOP 10 * FROM AggAQI;\nSELECT TOP 10 * FROM AggPollutants;\nSELECT TOP 10 * FROM HighPollutionEvents;",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
