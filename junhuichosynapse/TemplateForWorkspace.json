@@ -22,6 +22,15 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('workspaceName'), '/ds598sqlpool')]",
+			"type": "Microsoft.Synapse/workspaces/sqlPools",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/junhuichosynapse-WorkspaceDefaultSqlServer')]",
 			"type": "Microsoft.Synapse/workspaces/linkedServices",
 			"apiVersion": "2019-06-01-preview",
@@ -90,6 +99,86 @@
 			"properties": {
 				"type": "ManagedIdentity",
 				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Drop Script')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "-- Drop external tables\n-- DROP EXTERNAL TABLE ExternalAggAQI;\n-- DROP EXTERNAL TABLE ExternalAggPollutants;\n-- DROP EXTERNAL TABLE ExternalAggTempExtremes;\n-- DROP EXTERNAL TABLE ExternalAggWeather;\n-- DROP EXTERNAL TABLE ExternalAggWeatherConditions;\n-- DROP EXTERNAL TABLE ExternalAirPollution;\n-- DROP EXTERNAL TABLE ExternalHighPollutionEvents;\nDROP EXTERNAL TABLE ExternalWeather;\nGO\n\n-- Drop regular tables\n-- DROP TABLE AggAQI;\n-- DROP TABLE AggPollutants;\n-- DROP TABLE AggTempExtremes;\n-- DROP TABLE AggWeather;\n-- DROP TABLE AggWeatherConditions;\n-- DROP TABLE DimDateTime;\n-- DROP TABLE DimLocation;\n-- DROP TABLE DimAirPollution;\n-- DROP TABLE DimWeatherCondition;\nDROP TABLE FactWeather;\n-- DROP TABLE HighPollutionEvents;\n-- DROP TABLE DimDate;\nGO",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "ds598sqlpool",
+						"poolName": "ds598sqlpool"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/ExternalTables')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "CREATE EXTERNAL TABLE ExternalWeather ( --positionality matters for dedicated tables! Ensure its the correct order of datatypes and correct number\n    clouds_all SMALLINT,\n    feels_like_K FLOAT,\n    humidity SMALLINT,\n    pressure SMALLINT,\n    temp_K FLOAT,\n    temp_max_K FLOAT,\n    temp_min_K FLOAT,\n    rain_1h REAL,\n    snow_1h REAL,\n    wind_deg SMALLINT,\n    wind_gust FLOAT,\n    wind_speed FLOAT,\n    corrected_timestamp INT,\n    location NVARCHAR(100),\n    date_time DATETIME,\n    id NVARCHAR(100),\n    temp_C FLOAT,\n    temp_min_C FLOAT,\n    temp_max_C FLOAT,\n    feels_like_C FLOAT,\n    temp_min_F FLOAT,\n    temp_max_F FLOAT,\n    feels_like_F FLOAT,\n    lon FLOAT,\n    lat FLOAT,\n    weather_id_value INT,\n    weather_main_value NVARCHAR(100),\n    weather_description_value NVARCHAR(100),\n    weather_icon_value NVARCHAR(100),\n    temp_F FLOAT\n)\nWITH (\n    LOCATION = '/gold/processed_weather/processed_weather.parquet', --may be different based on your storage location\n    DATA_SOURCE = MyDataSource,\n    FILE_FORMAT = ParquetFileFormat\n);\nGO\n\n-- Create FactWeather table with matching data types (internal sql table)\nCREATE TABLE FactWeather (\n    id NVARCHAR(100),                             -- String identifier to match ExternalWeather's NVARCHAR(100)\n    date_time DATETIME2,                          -- Higher precision datetime to match ExternalWeather's DATETIME2 usage\n    date DATE,        \n    location NVARCHAR(100),                       -- Shorter NVARCHAR(100) to match ExternalWeather's location column\n    humidity SMALLINT,                            -- Small integer to match ExternalWeather's SMALLINT for humidity\n    pressure SMALLINT,                            -- Small integer to match ExternalWeather's SMALLINT for pressure\n    clouds_all SMALLINT,                          -- Small integer to match ExternalWeather's SMALLINT for clouds_all\n    temp_K FLOAT,                                 -- Float to match ExternalWeather's temp_K\n    feels_like_K FLOAT,                           -- Float to match ExternalWeather's feels_like_K\n    temp_max_K FLOAT,                             -- Float to match ExternalWeather's temp_max_K\n    temp_min_K FLOAT,                             -- Float to match ExternalWeather's temp_min_K\n    temp_C FLOAT,                                 -- Float to match ExternalWeather's temp_C\n    feels_like_C FLOAT,                           -- Float to match ExternalWeather's feels_like_C\n    temp_max_C FLOAT,                             -- Float to match ExternalWeather's temp_max_C\n    temp_min_C FLOAT,                             -- Float to match ExternalWeather's temp_min_C\n    temp_F FLOAT,                                 -- Float to match ExternalWeather's temp_F\n    feels_like_F FLOAT,                           -- Float to match ExternalWeather's feels_like_F\n    temp_max_F FLOAT,                             -- Float to match ExternalWeather's temp_max_F\n    temp_min_F FLOAT,                             -- Float to match ExternalWeather's temp_min_F\n    weather_combined_value NVARCHAR(200)          -- NVARCHAR to match ExternalWeather, increased length for combined data\n);\nGO\n\n-- Insert data into FactWeather\n-- wind columns might be null if you didnt ingest them, so remove them from the insert\nINSERT INTO FactWeather (id, date_time, date, location, humidity, pressure, clouds_all, temp_K, feels_like_K, temp_max_K, temp_min_K, temp_C, feels_like_C, temp_max_C, temp_min_C, temp_F, feels_like_F, temp_max_F, temp_min_F, weather_combined_value)\nSELECT \n    id,\n    date_time, \n    CAST(date_time AS DATE) AS date,\n    location,\n    humidity, \n    pressure, \n    clouds_all, \n    temp_K, \n    feels_like_K, \n    temp_max_K, \n    temp_min_K,\n    temp_C,\n    feels_like_C,\n    temp_max_C,\n    temp_min_C,\n    temp_F,\n    feels_like_F,\n    temp_max_F,\n    temp_min_F,\n    CONCAT(weather_id_value, '_', weather_icon_value) AS weather_combined_value\nFROM \n    ExternalWeather;\nGO\n\nSELECT TOP 10 * FROM FactWeather;\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "ds598sqlpool",
+						"poolName": "ds598sqlpool"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/InternalTabels')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Resource Creation')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "-- Create external data source to connect to your container\nCREATE EXTERNAL DATA SOURCE MyDataSource \nWITH (\n    LOCATION = 'https://junhuisa.dfs.core.windows.net/blob1'\n);\nGO\n\n-- Create external file format\nCREATE EXTERNAL FILE FORMAT ParquetFileFormat\nWITH (\n    FORMAT_TYPE = PARQUET\n);\nGO",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
 			},
 			"dependsOn": []
 		},
@@ -1268,7 +1357,7 @@
 						"spark.dynamicAllocation.enabled": "false",
 						"spark.dynamicAllocation.minExecutors": "2",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "da35aa30-1fe9-4f1e-aebd-7c0e0ab61453"
+						"spark.autotune.trackingId": "980803bd-fa7a-469f-ab73-a0d81dd4dffd"
 					}
 				},
 				"metadata": {
@@ -1293,15 +1382,13 @@
 						"sparkVersion": "3.4",
 						"nodeCount": 3,
 						"cores": 4,
-						"memory": 28,
-						"automaticScaleJobs": false
+						"memory": 28
 					},
 					"sessionKeepAliveTimeout": 30
 				},
 				"cells": [
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"from notebookutils import mssparkutils\n",
 							"\n",
@@ -1322,7 +1409,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# Set up the configuration for accessing the storage account\n",
 							"container = \"blob1\"\n",
@@ -1341,7 +1427,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"from pyspark.sql.functions import col, round\n",
 							"import pyspark.sql.functions as F\n",
@@ -1353,7 +1438,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"def calculate_aqi(pollutant, concentration):\n",
 							"    breakpoints = {\n",
@@ -1381,7 +1465,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"def calculate_rolling_average(df, column, window):\n",
 							"    windowSpec = Window.partitionBy(\"location\").orderBy(\"date_time\").rowsBetween(-window+1, 0)\n",
@@ -1443,7 +1526,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# Display selected columns to verify recalculations\n",
 							"air_pollution_df.select(\n",
@@ -1465,7 +1547,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# Add temp_F separately\n",
 							"\n",
@@ -1482,7 +1563,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# Aggregation by Date: Compute daily averages for temperature, humidity, wind speed, etc.\n",
 							"weather_agg_df = weather_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
@@ -1508,7 +1588,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# Show Daily Average for temp, humidity, wind_speed, temp_max, and temp_min\n",
 							"weather_agg_df.orderBy(\"date\").show(truncate=False)\n",
@@ -1524,7 +1603,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# Daily Average AQI: Compute the daily average Air Quality Index (AQI)\n",
 							"aqi_agg_df = air_pollution_df.groupBy(F.date_format(col(\"date_time\"), \"yyyy-MM-dd\").alias(\"date\")).agg(\n",
@@ -1551,7 +1629,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"# Show Daily Average AQI\n",
 							"aqi_agg_df.orderBy(\"date\").show(truncate=False)\n",
@@ -1567,7 +1644,6 @@
 					},
 					{
 						"cell_type": "code",
-						"metadata": {},
 						"source": [
 							"def save_and_rename(df, directory_path, filename):\n",
 							"    df.coalesce(1).write.mode(\"overwrite\").parquet(directory_path)\n",
@@ -1617,6 +1693,18 @@
 				"sparkVersion": "3.4",
 				"isComputeIsolationEnabled": false,
 				"sessionLevelPackagesEnabled": true,
+				"annotations": []
+			},
+			"dependsOn": [],
+			"location": "eastus2"
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/ds598sqlpool')]",
+			"type": "Microsoft.Synapse/workspaces/sqlPools",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"collation": "SQL_Latin1_General_CP1_CI_AS",
+				"maxSizeBytes": 263882790666240,
 				"annotations": []
 			},
 			"dependsOn": [],
