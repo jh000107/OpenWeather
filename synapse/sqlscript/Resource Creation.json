@@ -1,0 +1,17 @@
+{
+	"name": "Resource Creation",
+	"properties": {
+		"content": {
+			"query": "-- Create external data source to connect to your container\nCREATE EXTERNAL DATA SOURCE MyDataSource \nWITH (\n    LOCATION = 'https://junhuisa.dfs.core.windows.net/blob1'\n);\nGO\n\n-- Create external file format\nCREATE EXTERNAL FILE FORMAT ParquetFileFormat\nWITH (\n    FORMAT_TYPE = PARQUET\n);\nGO",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
