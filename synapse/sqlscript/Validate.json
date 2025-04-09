@@ -2,7 +2,7 @@
 	"name": "Validate",
 	"properties": {
 		"content": {
-			"query": "-- SELECT TOP 10 * FROM FactWeather;\n-- SELECT TOP 10 * FROM DimLocation;\n-- SELECT TOP 10 * FROM DimAirPollution;\n-- SELECT TOP 10 * FROM DimWeatherCondition;\nSELECT TOP 10 * FROM DimDateTime;\n-- SELECT TOP 10 * FROM DimDate;\n-- SELECT TOP 10 * FROM AggWeather;\n-- SELECT TOP 10 * FROM AggWeatherConditions;\n-- SELECT TOP 10 * FROM AggTempExtremes;\n-- SELECT TOP 10 * FROM AggAQI;\n-- SELECT TOP 10 * FROM AggPollutants;\n-- SELECT TOP 10 * FROM HighPollutionEvents;",
+			"query": "-- SELECT TOP 10 * FROM FactWeather;\n-- SELECT TOP 10 * FROM DimLocation;\n-- SELECT TOP 10 * FROM DimAirPollution;\n-- SELECT TOP 10 * FROM DimWeatherCondition;\n-- SELECT TOP 10 * FROM DimDateTime;\n-- SELECT TOP 10 * FROM DimDate;\n-- SELECT TOP 10 * FROM AggWeather;\n-- SELECT TOP 10 * FROM AggWeatherConditions;\n-- SELECT TOP 10 * FROM AggTempExtremes;\n-- SELECT TOP 10 * FROM AggAQI;\n-- SELECT TOP 10 * FROM AggPollutants;\n-- SELECT TOP 10 * FROM HighPollutionEvents;",
 			"metadata": {
 				"language": "sql"
 			},
