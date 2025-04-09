@@ -1,0 +1,17 @@
+{
+	"name": "Drop Script",
+	"properties": {
+		"content": {
+			"query": "-- Drop external tables\nDROP EXTERNAL TABLE ExternalAggAQI;\nDROP EXTERNAL TABLE ExternalAggPollutants;\nDROP EXTERNAL TABLE ExternalAggTempExtremes;\nDROP EXTERNAL TABLE ExternalAggWeather;\nDROP EXTERNAL TABLE ExternalAggWeatherConditions;\nDROP EXTERNAL TABLE ExternalAirPollution;\nDROP EXTERNAL TABLE ExternalHighPollutionEvents;\nDROP EXTERNAL TABLE ExternalWeather;\nGO\n\n-- Drop regular tables\nDROP TABLE AggAQI;\nDROP TABLE AggPollutants;\nDROP TABLE AggTempExtremes;\nDROP TABLE AggWeather;\nDROP TABLE AggWeatherConditions;\nDROP TABLE DimDateTime;\nDROP TABLE DimLocation;\nDROP TABLE DimAirPollution;\nDROP TABLE DimWeatherCondition;\nDROP TABLE FactWeather;\nDROP TABLE HighPollutionEvents;\nDROP TABLE DimDate;\nGO",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "ds598sqlpool",
+				"poolName": "ds598sqlpool"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
