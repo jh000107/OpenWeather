@@ -49,3 +49,7 @@ Function script can be found [here](https://github.com/jh000107/OpenWeather/blob
 Historical Air Pollution Data Flow can be found [here](https://github.com/jh000107/OpenWeather/blob/master/data_factory/dataflow/PreprocessAirPollutionData.json).
 
 Historical Weather Data Flow can be found [here](https://github.com/jh000107/OpenWeather/blob/master/data_factory/dataflow/PreprocessWeatherData.json).
+
+## Batch Processing
+
+**Objective**: Perform batch processing on the preprocessed data to handle large-scale data transformations and aggregations using Azure Synapse with PySpark. The processed data will be stored in the Gold layer of Azure Data Lake Storage.
