@@ -53,3 +53,5 @@ Historical Weather Data Flow can be found [here](https://github.com/jh000107/Ope
 ## Batch Processing
 
 **Objective**: Perform batch processing on the preprocessed data to handle large-scale data transformations and aggregations using Azure Synapse with PySpark. The processed data will be stored in the Gold layer of Azure Data Lake Storage.
+
+Source to be added
