@@ -55,3 +55,7 @@ Historical Weather Data Flow can be found [here](https://github.com/jh000107/Ope
 **Objective**: Perform batch processing on the preprocessed data to handle large-scale data transformations and aggregations using Azure Synapse with PySpark. The processed data will be stored in the Gold layer of Azure Data Lake Storage.
 
 Source to be added
+
+## Data Loading
+
+**Objective**: Move the processed data from the Gold layer in Azure Data Lake Storage (ADLS) to the data warehouse using Azure Synapse Analytics. Specifically, we are ingesting data from our storage account first into external tables, then branching off those external tables to create internal synapse dimension, fact, and aggregated tables.
