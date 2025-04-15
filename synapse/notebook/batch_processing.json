@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "980803bd-fa7a-469f-ab73-a0d81dd4dffd"
+				"spark.autotune.trackingId": "5a619f2e-c192-4d3f-a674-eadefff27c63"
 			}
 		},
 		"metadata": {
@@ -87,12 +87,29 @@
 			{
 				"cell_type": "code",
 				"source": [
-					"from pyspark.sql.functions import col, round\n",
+					"from pyspark.sql.functions import col, round, min as spark_min, max as spark_max\n",
 					"import pyspark.sql.functions as F\n",
 					"from pyspark.sql.window import Window\n",
 					"from pyspark.sql.types import IntegerType"
 				],
 				"execution_count": 9
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Get min/max dates from both\n",
+					"air_dates = air_pollution_df.select(spark_min(\"date_time\").alias(\"min_date\"), spark_max(\"date_time\").alias(\"max_date\")).collect()[0]\n",
+					"weather_dates = weather_df.select(spark_min(\"date_time\").alias(\"min_date\"), spark_max(\"date_time\").alias(\"max_date\")).collect()[0]\n",
+					"\n",
+					"# Find the overlapping range\n",
+					"start_date = max(air_dates[\"min_date\"], weather_dates[\"min_date\"])\n",
+					"end_date = min(air_dates[\"max_date\"], weather_dates[\"max_date\"])\n",
+					"\n",
+					"# Filter both DataFrames to that range\n",
+					"air_pollution_df = air_pollution_df.filter((col(\"date_time\") >= start_date) & (col(\"date_time\") <= end_date))\n",
+					"weather_df = weather_df.filter((col(\"date_time\") >= start_date) & (col(\"date_time\") <= end_date))"
+				],
+				"execution_count": null
 			},
 			{
 				"cell_type": "code",
