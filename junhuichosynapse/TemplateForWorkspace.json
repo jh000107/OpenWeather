@@ -1368,7 +1368,7 @@
 						"spark.dynamicAllocation.enabled": "false",
 						"spark.dynamicAllocation.minExecutors": "2",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "90487d98-6ba0-4ad3-b069-db64fc9143b3"
+						"spark.autotune.trackingId": "3485159c-5bf8-4f1b-aca2-ed915677ada4"
 					}
 				},
 				"metadata": {
@@ -1418,7 +1418,7 @@
 							")"
 						],
 						"outputs": [],
-						"execution_count": 59
+						"execution_count": 1
 					},
 					{
 						"cell_type": "code",
@@ -1436,19 +1436,19 @@
 							""
 						],
 						"outputs": [],
-						"execution_count": 71
+						"execution_count": 2
 					},
 					{
 						"cell_type": "code",
 						"metadata": {},
 						"source": [
-							"from pyspark.sql.functions import col, round\n",
+							"from pyspark.sql.functions import col, min as spark_min, max as spark_max\n",
 							"import pyspark.sql.functions as F\n",
 							"from pyspark.sql.window import Window\n",
 							"from pyspark.sql.types import IntegerType"
 						],
 						"outputs": [],
-						"execution_count": 72
+						"execution_count": 4
 					},
 					{
 						"cell_type": "code",
@@ -1469,7 +1469,7 @@
 							"weather_df = weather_df.filter((col(\"date_time\") >= start_date) & (col(\"date_time\") <= end_date))"
 						],
 						"outputs": [],
-						"execution_count": 35
+						"execution_count": 5
 					},
 					{
 						"cell_type": "code",
@@ -1497,7 +1497,7 @@
 							"    return None  # If the concentration is out of the given ranges"
 						],
 						"outputs": [],
-						"execution_count": 73
+						"execution_count": 6
 					},
 					{
 						"cell_type": "code",
@@ -1507,29 +1507,29 @@
 							"    windowSpec = Window.partitionBy(\"location\").orderBy(\"date_time\").rowsBetween(-window+1, 0)\n",
 							"    return F.avg(column).over(windowSpec)\n",
 							"\n",
-							"# updated calculate_aqi_row for separate arguments\n",
-							"def calculate_aqi_row(o3_8hr, o3_1hr, pm2_5_24hr, pm10_24hr, co_8hr, so2_1hr, so2_24hr, no2_1hr):\n",
+							"def calculate_aqi_row(row):\n",
 							"    pollutant_map = {\n",
-							"        'o3_8hr': ('O3_8hr', o3_8hr),\n",
-							"        'o3_1hr': ('O3_1hr', o3_1hr),\n",
-							"        'pm2_5_24hr': ('PM2.5_24hr', pm2_5_24hr),\n",
-							"        'pm10_24hr': ('PM10_24hr', pm10_24hr),\n",
-							"        'co_8hr': ('CO_8hr', co_8hr),\n",
-							"        'so2_1hr': ('SO2_1hr', so2_1hr),\n",
-							"        'so2_24hr': ('SO2_24hr', so2_24hr),\n",
-							"        'no2_1hr': ('NO2_1hr', no2_1hr),\n",
+							"        'o3_8hr': 'O3_8hr',\n",
+							"        'o3_1hr': 'O3_1hr',\n",
+							"        'pm2_5_24hr': 'PM2.5_24hr',\n",
+							"        'pm10_24hr': 'PM10_24hr',\n",
+							"        'co_8hr': 'CO_8hr',\n",
+							"        'so2_1hr': 'SO2_1hr',\n",
+							"        'so2_24hr': 'SO2_24hr',\n",
+							"        'no2_1hr': 'NO2_1hr'\n",
 							"    }\n",
-							"\n",
 							"    aqi_values = []\n",
 							"\n",
-							"    for _, (pollutant, concentration) in pollutant_map.items():\n",
+							"    for col_name, pollutant in pollutant_map.items():\n",
+							"        concentration = row[col_name]\n",
 							"        if concentration is not None:\n",
 							"            aqi = calculate_aqi(pollutant, concentration)\n",
 							"            if aqi is not None:\n",
 							"                aqi_values.append(aqi)\n",
 							"\n",
-							"    return max(aqi_values) if aqi_values else None\n",
-							"\n",
+							"    if aqi_values:\n",
+							"        return max(aqi_values)\n",
+							"    return None\n",
 							"\n",
 							"def calculate_us_aqi(df):\n",
 							"    df = df.withColumn(\"o3_8hr\", calculate_rolling_average(df, \"o3\", 8))\n",
@@ -1541,9 +1541,9 @@
 							"    df = df.withColumn(\"so2_24hr\", calculate_rolling_average(df, \"so2\", 24))\n",
 							"    df = df.withColumn(\"no2_1hr\", df[\"no2\"])\n",
 							"\n",
-							"    calculate_aqi_udf = F.udf(calculate_aqi_row, IntegerType())\n",
+							"    calculate_aqi_udf = F.udf(lambda row: calculate_aqi_row(row), IntegerType())\n",
 							"    \n",
-							"    df = df.withColumn(\"us_aqi\", calculate_aqi_udf(\n",
+							"    df = df.withColumn(\"us_aqi\", calculate_aqi_udf(F.struct(\n",
 							"        col(\"o3_8hr\"),\n",
 							"        col(\"o3_1hr\"),\n",
 							"        col(\"pm2_5_24hr\"),\n",
@@ -1552,14 +1552,14 @@
 							"        col(\"so2_1hr\"),\n",
 							"        col(\"so2_24hr\"),\n",
 							"        col(\"no2_1hr\")\n",
-							"    ))\n",
+							"    )))\n",
 							"\n",
 							"    return df\n",
 							"\n",
 							"air_pollution_df = calculate_us_aqi(air_pollution_df)"
 						],
 						"outputs": [],
-						"execution_count": 74
+						"execution_count": 7
 					},
 					{
 						"cell_type": "code",
@@ -1567,7 +1567,7 @@
 						"source": [
 							"# Add temp_F separately\n",
 							"\n",
-							"weather_df = weather_df.withColumn(\"temp_F\", round((col(\"temp_K\") - 273.15) * 9 / 5 + 32, 2))\n",
+							"weather_df = weather_df.withColumn(\"temp_F\", F.round((col(\"temp_K\") - 273.15) * 9 / 5 + 32, 2))\n",
 							"\n",
 							"weather_df.select(\n",
 							"    \"temp_K\",\n",
@@ -1576,7 +1576,7 @@
 							").show(10)"
 						],
 						"outputs": [],
-						"execution_count": 38
+						"execution_count": 9
 					},
 					{
 						"cell_type": "code",
@@ -1598,7 +1598,7 @@
 							").show(10)"
 						],
 						"outputs": [],
-						"execution_count": 77
+						"execution_count": 10
 					},
 					{
 						"cell_type": "code",
@@ -1624,7 +1624,7 @@
 							")"
 						],
 						"outputs": [],
-						"execution_count": 40
+						"execution_count": 11
 					},
 					{
 						"cell_type": "code",
@@ -1640,7 +1640,7 @@
 							"temp_extremes_df.orderBy(\"date\").show(truncate=False)"
 						],
 						"outputs": [],
-						"execution_count": 41
+						"execution_count": 12
 					},
 					{
 						"cell_type": "code",
@@ -1667,7 +1667,7 @@
 							")"
 						],
 						"outputs": [],
-						"execution_count": 42
+						"execution_count": 13
 					},
 					{
 						"cell_type": "code",
@@ -1683,7 +1683,7 @@
 							"high_pollution_events_df.orderBy(\"date\").show(truncate=False)"
 						],
 						"outputs": [],
-						"execution_count": 43
+						"execution_count": 14
 					},
 					{
 						"cell_type": "code",
