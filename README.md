@@ -59,3 +59,7 @@ Source to be added
 ## Data Loading
 
 **Objective**: Move the processed data from the Gold layer in Azure Data Lake Storage (ADLS) to the data warehouse using Azure Synapse Analytics. Specifically, we are ingesting data from our storage account first into external tables, then branching off those external tables to create internal synapse dimension, fact, and aggregated tables.
+
+## Data Visualization with Power BI
+
+**Objective**: Create interactive visualizations to analyze the processed data using Power BI connected to Azure Synapse Analytics. This involves setting up the connection between Power BI and Synapse, creating dashboards, and generating insights from the visualized historical data.
