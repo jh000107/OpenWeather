@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "980803bd-fa7a-469f-ab73-a0d81dd4dffd"
+				"spark.autotune.trackingId": "2a0f424a-fd2c-46d1-b13b-7617f396b79d"
 			}
 		},
 		"metadata": {
@@ -73,7 +73,6 @@
 					"# Set up the configuration for accessing the storage account\n",
 					"container = \"blob1\"\n",
 					"\n",
-					"\n",
 					"# Define ABFSS path\n",
 					"abfss_path = f\"abfss://{container}@{storage_account_name}.dfs.core.windows.net/\"\n",
 					"\n",
@@ -87,12 +86,31 @@
 			{
 				"cell_type": "code",
 				"source": [
-					"from pyspark.sql.functions import col, round\n",
+					"from pyspark.sql.functions import col, min as spark_min, max as spark_max\n",
 					"import pyspark.sql.functions as F\n",
 					"from pyspark.sql.window import Window\n",
 					"from pyspark.sql.types import IntegerType"
 				],
-				"execution_count": 9
+				"execution_count": 4
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Get min/max dates from both\n",
+					"air_dates = air_pollution_df.select(spark_min(\"date_time\").alias(\"min_date\"), spark_max(\"date_time\").alias(\"max_date\")).collect()[0]\n",
+					"weather_dates = weather_df.select(spark_min(\"date_time\").alias(\"min_date\"), spark_max(\"date_time\").alias(\"max_date\")).collect()[0]\n",
+					"\n",
+					"# Find the overlapping range\n",
+					"start_date = max(air_dates[\"min_date\"], weather_dates[\"min_date\"])\n",
+					"end_date = min(air_dates[\"max_date\"], weather_dates[\"max_date\"])\n",
+					"\n",
+					"print(start_date, end_date)\n",
+					"\n",
+					"# Filter both DataFrames to that range\n",
+					"air_pollution_df = air_pollution_df.filter((col(\"date_time\") >= start_date) & (col(\"date_time\") <= end_date))\n",
+					"weather_df = weather_df.filter((col(\"date_time\") >= start_date) & (col(\"date_time\") <= end_date))"
+				],
+				"execution_count": 5
 			},
 			{
 				"cell_type": "code",
@@ -118,7 +136,7 @@
 					"\n",
 					"    return None  # If the concentration is out of the given ranges"
 				],
-				"execution_count": 4
+				"execution_count": 6
 			},
 			{
 				"cell_type": "code",
@@ -178,7 +196,22 @@
 					"\n",
 					"air_pollution_df = calculate_us_aqi(air_pollution_df)"
 				],
-				"execution_count": 5
+				"execution_count": 7
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Add temp_F separately\n",
+					"\n",
+					"weather_df = weather_df.withColumn(\"temp_F\", F.round((col(\"temp_K\") - 273.15) * 9 / 5 + 32, 2))\n",
+					"\n",
+					"weather_df.select(\n",
+					"    \"temp_K\",\n",
+					"    \"temp_C\",\n",
+					"    \"temp_F\"\n",
+					").show(10)"
+				],
+				"execution_count": 9
 			},
 			{
 				"cell_type": "code",
@@ -194,23 +227,8 @@
 					"    \"so2_1hr\", \n",
 					"    \"so2_24hr\", \n",
 					"    \"no2_1hr\", \n",
+					"    \"aqi\",\n",
 					"    \"us_aqi\",\n",
-					"    \"aqi\"\n",
-					").show(10)"
-				],
-				"execution_count": 6
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					"# Add temp_F separately\n",
-					"\n",
-					"weather_df = weather_df.withColumn(\"temp_F\", round((col(\"temp_K\") - 273.15) * 9 / 5 + 32, 2))\n",
-					"\n",
-					"weather_df.select(\n",
-					"    \"temp_K\",\n",
-					"    \"temp_C\",\n",
-					"    \"temp_F\"\n",
 					").show(10)"
 				],
 				"execution_count": 10
